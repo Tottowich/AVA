@@ -38,10 +38,10 @@
 x1 = [0 0]; % Refrensed as particle 1. (x,y)
 x2 = [1.8 0]; % - || -     particle 2. (x,y)
 x3 = [0 1]; % REMOVE
-masses = [1; 1;]; % The masses of particle 1 and two
+masses = [1; 1]; % The masses of particle 1 and two
 L = 1; % Spring rest length.
 ks = 10; % Spring constant.
-kd = 0.0; % Damping coefficient, 0 since no damping.
+kd = 1; % Damping coefficient.w
 g = 0;%9.82; % NO GRAVITY.
 % The particles are released from rest, i.e:
 v1 = [0 0];
@@ -56,23 +56,75 @@ v3 = [0 0]; % REMOVE
 % As described in the theory above we can use the function
 %      F(i,j) = -ks(abs(r(i,j))-L)*r_bar, Must be a vector!
 % Note: r(i,j) is the distance between particle i and particle j
-t_steps = 100;
-dt = 0.1;
+T = 10;
+dt = 0.0025;
+t_steps = ceil(T/dt);
 M = diag(masses);
 X_init = [x1;x2];
 V_init = [v1;v2];
 F = @(X,V) ForceFunction(X,V,ks,kd,L); % Anonymous function for LeapFrog
 [X,V] = LeapFrog(X_init,V_init,F,M,t_steps,dt);
+%timeit(@() LeapFrog(X_init,V_init,F,M,t_steps,dt))
 % a) Visualize the trajectory of the system.
 %VisualizeSpringSystem(X)
 % b) Calculate the energies.
 [E,Ek,Es,Ep] = EnergyCalculation(X,V,masses,g,ks,L);
-plot(linspace(0,dt*t_steps,t_steps),[E,Ek,Es,Ep])
+ts = linspace(0,T,t_steps);
+% Plot energies over time.
+figure(1);
+plot(ts,[E,Ek,Es,Ep])
 legend("Total","Kinetic","Spring","Potential",Location="best")
 xlabel("Time ( s )")
 ylabel("Energy ( J )")
-title("Energy over time in the coupled spring system.")
+if kd>0
+    title("Energy over time in the coupled damped spring system. kd = "+kd)
+else
+    title("Energy over time in the coupled non damped spring system.")
+end
+grid on;
+% Calculate the difference in energy per occilation.
+%E_diff = max(E)-min(E);
+%fprintf("\nUsing %.4f results in maximum \nrelative differenceo of %.3f %%\n",dt,E_diff/max(E)*100)
+% Plot displacement of the particles
+figure(2)
+subplot(2,2,[1 2])
+plot(ts,X(:,:,1))
+xlabel("Time ( s )")
+ylabel("Displacement ( m )")
+title("Displacement over time in x")
+grid on;
+subplot(2,2,[3 4])
+plot(ts,X(:,:,2))
+legend("x-coords","y-coords",Location="best")
+xlabel("Time ( s )")
+ylabel("Displacement ( m )")
+title("Displacement over time in y")
 grid on
+hold off
+
+% The relative position of each particle is the length of the springs.
+R = X - permute(X, [1 4 3 2]); % Relative positions, how long are the springs.
+rs = vecnorm(R,2,3); % The magnitude of each spring.
+spring_length = rs(:,1,2); % The spring. as seen from (1)<->(2)
+amps = spring_length-L; % The amplitudes represent the strech of the spring.
+% Plot the length of the spring over time.
+figure(3);
+plot(ts,spring_length)
+grid on;
+title("Length of spring between particle (1) and  (2)")
+xlabel("Time (s)")
+ylabel("Length (m)")
+[amp_peaks,amp_ids] = findpeaks(amps);
+amp_times = amp_ids*dt;
+amp_init = amps(1); % Initial amplitude of the spring.
+% Find first peak which does not exceed 10% of the initial amplitude.
+id_amp = find(amp_peaks<0.1*amp_init,1);
+% Elapsed time can be found in amp_times
+fprintf("\nTime to reach 10%% of initial amplitude using the following values:\n")
+fprintf("Initial amplitude = %.3f\n",amp_init);
+fprintf("kd = %.3f\n",kd);
+fprintf("ks = %.3f\n",ks);
+fprintf("Time to reach = %.3f\n",amp_times(id_amp));
 
 function F_mat = ForceFunction(X,V,ks,kd,L)
     % This is the force function of the current lab exercise.
@@ -81,7 +133,7 @@ function F_mat = ForceFunction(X,V,ks,kd,L)
     % V has the same shape.
     % We want to return the force matrix of the same shape as X and V.
     
-    % Create a distance tensor of shape (NP x n_dims x NP)
+    % Create a distance and relative velocity tensors of shape (NP x n_dims x NP)
     R = X - permute(X, [3 2 1]); % Relative positions
     V_rels = V-permute(V, [3 2 1]); % Relative velocities
     rs = vecnorm(R,2,2); % Euclidian norm on the second channel to 
