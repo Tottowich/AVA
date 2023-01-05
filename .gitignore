@@ -1,0 +1,5 @@
+node_modules/
+package-lock.json
+package.json
+*.asv
+COMSOL/LabB/exercise1/exercise4.mph

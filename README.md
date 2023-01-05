@@ -1,2 +1,2 @@
-# AVA
- Applied Vector Analysis UMU
+# Applied Vector Analysis
+ 
