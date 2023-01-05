@@ -16,6 +16,17 @@ function M = AngularMomentum(X,V,m)
 %             the order of X and V.
 %             Shape: (NP x 1)
 %
- 
+[t_steps,NP,n_dims] = size(X);
+if n_dims==2
+    x = X(:,:,1);
+    y = X(:,:,2);
+    vx = V(:,:,1);
+    vy = V(:,:,2);
+    Ms = x.*vy-y.*vx;
+    M = Ms*m;
+elseif n_dims==3
+    % TODO
+else
+    error('Can only process 2 or 3 dimensions. Got: '+n_dims)
 end
 

@@ -42,10 +42,11 @@ masses = [1; 1]; % The masses of particle 1 and two
 L = 1; % Spring rest length.
 ks = 10; % Spring constant.
 kd = 1; % Damping coefficient.w
-g = 0;%9.82; % NO GRAVITY.
+g = 0; % NO GRAVITY.
 % The particles are released from rest, i.e:
-v1 = [0 0];
-v2 = [0 0];
+v = 5;
+v1 = [0 -v];
+v2 = [0 v];
 v3 = [0 0]; % REMOVE
 % ---------------
 
@@ -57,7 +58,7 @@ v3 = [0 0]; % REMOVE
 %      F(i,j) = -ks(abs(r(i,j))-L)*r_bar, Must be a vector!
 % Note: r(i,j) is the distance between particle i and particle j
 T = 10;
-dt = 0.0025;
+dt = 0.01;
 t_steps = ceil(T/dt);
 M = diag(masses);
 X_init = [x1;x2];
@@ -69,6 +70,7 @@ F = @(X,V) ForceFunction(X,V,ks,kd,L); % Anonymous function for LeapFrog
 %VisualizeSpringSystem(X)
 % b) Calculate the energies.
 [E,Ek,Es,Ep] = EnergyCalculation(X,V,masses,g,ks,L);
+
 ts = linspace(0,T,t_steps);
 % Plot energies over time.
 figure(1);
@@ -125,6 +127,26 @@ fprintf("Initial amplitude = %.3f\n",amp_init);
 fprintf("kd = %.3f\n",kd);
 fprintf("ks = %.3f\n",ks);
 fprintf("Time to reach = %.3f\n",amp_times(id_amp));
+
+% d) Calculate the angular momentum
+ang_mom = AngularMomentum(X,V,masses);
+% We estimate the spring system as two point masses.
+% Find the moment of inertia at each time step.
+% Since we have equal masses we know that the axis of rotation is in the
+% middle of the spring. Resulting in two dual
+I = sum((spring_length/2).^2.*masses',2);
+ang_freq = ang_mom./I;
+% Plotting the angular momentum vs spring length
+plot(ts,ang_freq,DisplayName="Angular Frequency")
+hold on;
+plot(ts,spring_length,DisplayName="Spring Length")
+grid on;
+legend(Location="best")
+title("Angular frequency and spring length")
+xlabel("Time (s)")
+ylabel("rad/s & m")
+hold off;
+
 
 function F_mat = ForceFunction(X,V,ks,kd,L)
     % This is the force function of the current lab exercise.
