@@ -1,4 +1,4 @@
-function  VisualizeSpringSystem(X)
+function  VisualizeSpringSystem(X,A)
 %VISUALIZECHEESE Visualize the simulated spring system'cheese'
 %   Function used to animated the system of springs.
 %
@@ -6,7 +6,9 @@ function  VisualizeSpringSystem(X)
 % Date: 05/01/2023
 % INPUT
 %
-%   X - matrix of size (t_steps, NP, n_dims)
+%   X - (mat) matrix of size (t_steps, NP, n_dims)
+%
+%   A - (mat) Adjacency matrix of the spring system.
 %
 % Initialize animation file before main loop
 figure(1); % Create a new figure, if needed.
@@ -26,7 +28,6 @@ xlim([minminx-1,maxmaxx+1])
 ylim([minminy-1,maxmaxy+1])
 grid on
 title("Visualization of spring connected system")
-A = ones(size(X,2)); % Adjecency matrix used to connect all nodes.
 ...
 % Begin main time loop
 for t = 1:size(X,1)
@@ -38,8 +39,11 @@ for t = 1:size(X,1)
     gplot(A,xy,'b-o') % Plot connected strings using graph plotting.   
     writeVideo(MOVE,getframe(gcf)); % Get a snapshot of the active figure frame
     % End of main time loop
+%     pause(0.1)
 end
 grid on
+
 close(MOVE); % Close and save the avi-file
+close(MOVE)
 end
 

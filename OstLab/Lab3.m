@@ -9,96 +9,140 @@
 %
 
 % ------- GIVEN PROPERTIES -------
-Nc = 3; % Number of columns of the 2D object.
-Nr = 4; % Rows of columns of the 2D object.
+Nc = 8; % Number of columns of the 2D object.
+Nr = 6; % Rows of columns of the 2D object.
 masses = 1; % All particles have mass 1.
 ks = 100;
-kd = 0;
+kd = 2;
 g = 1;
 dt = 2e-3;
 L = 1; % Evenly distributed particles => sqrt(2) on diagonal.
 % --------------------------------
 NP = Nc*Nr;
-
-% ------- Set up the 2D object --------
 n_dims = 2;
+% ------- Set up the 2D object --------
 % The object is denoted by the matrix X
 x = meshgrid(0:L:(Nc-1)/L,0:L:(Nr-1)/L);
 y = flip(meshgrid(0:L:(Nr-1)/L,0:L:(Nc-1)/L)',1);
-X = cat(3,x,y);
+X = cat(3,x',y');
 X = reshape(X,[NP n_dims]); % Flatten the matrix.
-% X now has Shape (NP x n_dims) 
+% X now has Shape (NP x n_dims)
+% First Nc entries in X is the top row, Nc+1->2*Nc second row and so on.
+V = zeros(NP,n_dims);
+% -------------------------------------
 
 % Now we can construct the adjecency matrix for the list of particles.
 % Which we can use as a mask to remove the forces from non connected
 % particles.
-A = zeros(NP,NP);
-for r = 0:1%Nr-1
-    for c = 0:Nc-1
-        i = r*Nc+c+1
-        if c > 0
-            A(i-1,i) = 1;
-            A(i,i-1) = 1;
-        end
-        if r > 0
-            A(i-Nc,i) = 1;
-            A(i,i-Nc) = 1;
-        end
-    end
-end
-image(A*256)
-x = squeeze(X(:,1));
-y = squeeze(X(:,2));
-xy = [x y]; % xy should be (NP x n_dims)
-% Update positions etc. and plot
-figure(2)
-gplot(A,xy,'b')
-hold on
-scatter(X(:,1),X(:,2))
-hold off
-axis padded
-%figure(3)
-%A = latticeAdjacencyMatrix(Nr,Nc)
-%image(A*256)
+
+% Figure to check connection.
 figure(4)
-mat = X;
-[r, c,n_dims] = size(mat);                          % Get the matrix size
-diagVec1 = repmat([ones(c-1, 1); 0], r, 1);  % Make the first diagonal vector
-                                             %   (for horizontal connections)
-diagVec1 = diagVec1(1:end-1);                % Remove the last value
-diagVec2 = [0; diagVec1(1:(c*(r-1)))];       % Make the second diagonal vector
-                                             %   (for anti-diagonal connections)
-diagVec3 = ones(c*(r-1), 1);                 % Make the third diagonal vector
-                                             %   (for vertical connections)
-diagVec4 = diagVec2(2:end-1);                % Make the fourth diagonal vector
-                                             %   (for diagonal connections)
-adj = diag(diagVec1, 1)+...                  % Add the diagonals to a zero matrix
-      diag(diagVec2, c-1)+...
-      diag(diagVec3, c)+...
-      diag(diagVec4, c+1);
-adj = adj+adj.';
-%image(adj*256)
-gplot(adj,xy,'b')
-function A = latticeAdjacencyMatrix(Nr,Nc)
-  % Let Nr, Nc denote the size of the rectangular 2d grid
-  % A - square adjacency matrix
-  % Connect nodes (i,j) to (i+1,j)
-  [i,j] = ndgrid(1:Nr-1,1:Nc);
-  ind1 = sub2ind([Nr,Nc],i,j);
-  ind2 = sub2ind([Nr,Nc],i+1,j);
-  
-  % Connect nodes (i,j) to (i,j+1)
-  [i,j] = ndgrid(1:Nr,1:Nc-1);
-  ind3 = sub2ind([Nr,Nc],i,j);
-  ind4 = sub2ind([Nr,Nc],i,j+1);
-  
-  % build the global adjacency matrix
-  totalnodes = Nr*(Nc-1) + (Nc-1)*Nc;
-  A = sparse([ind1(:);ind3(:)],[ind2(:);ind4(:)],ones(totalnodes,1),Nr*Nc,Nr*Nc);
-  
-  % symmetrize, since the above computations only followed the edges in one direction.
-  % that is to say, if a talks to b, then b also talks to a.
-  A = A + A';
+[A,diagonals] = GridAdjacencyMatrix(Nr,Nc);
+gplot(A,X,'b-o')
+grid on
+axis padded
+
+
+% ------- Set up the 2D spring --------
+% Now construct 3 string matrices.
+% These matrices are; spring constant per spring
+%                     spring damping coefficients
+%                     spring resting length
+
+L_springs = zeros(NP,1,NP);
+L_springs(A==1) = L;
+L_springs(diagonals==1) = sqrt(2)*L; % NOTE: Assuming equaly distributed.
+
+ks_springs = zeros(NP,1,NP);
+ks_springs(A==1) = ks;
+
+kd_springs = zeros(NP,1,NP);
+kd_springs(A==1) = kd;
+%-------------------------------------
+
+% Masses of the particles.
+ms = ones(NP,1)*masses; % All particles have the same mass.
+M = diag(ms);
+
+% Testing with some initial velocity
+V(Nc,:) = [50,50]; % Diagonal velocity of the top right particle.
+
+% Time step set-up.
+T = 0.5;
+t_steps = T/dt;
+ts = 0:dt:T;
+
+% F = @(X,V) ForceFunction(X,V,A,ms,g,ks_springs,kd_springs,L_springs);
+F = @(X,V) ForceFunction(X,V,ms,g,ks_springs,kd_springs,L_springs);
+[Xs,Vs] = LeapFrog(X,V,F,M,t_steps,dt);
+% VisualizeSpringSystem(Xs,A)
+% close
+% disp("Saved to 'ExampleVideo.avi'")
+[E,Ek,Es,Ep] = EnergyCalculation(Xs,Vs,ms,g,ks_springs,L_springs);
+function F_mat = ForceFunction(X,V,ms,g,ks,kd,L)
+    % This is the force function of the current lab exercise.
+    %
+    % INPUT
+    %   X - (mat) Positions of each particle at current time step.
+    %             Shape: (NP x n_dims). Dimensions in order (x,y,z)
+    %
+    %   V - (mat) Velocities of each particle at current time step.
+    %             Shape: (NP x n_dims)
+    %   ms - (vec) The masses of each particle.
+    %             Shape: (NP x 1)
+    %   g - (float) gravitational constant, typically 9.82
+    %
+    %   ks - (mat/float) either matrix of shape (NP x 1 x NP) or float.
+    %                    If matrix then ks(i,j) indicates coefficient of
+    %                    the spring between particle i and particle j. The
+    %                    matrix must be symmetric to make sense.
+    %   kd - (mat/float) either matrix of shape (NP x 1 x NP) or float.
+    %                    If matrix then ks(i,j) indicates damping coefficient 
+    %                    of the spring between particle i and particle j. The
+    %                    matrix must be symmetric to make sense.
+    %
+    %   L - (mat/float)  either matrix of shape (NP x NP) or float.
+    %                    If matrix then ks(i,j) sym indicates length of
+    %                    the spring between particle i and particle j at
+    %                    rest.The matrix must be symmetric to make sense.
+    %
+
+    % Create a distance and relative velocity tensors of shape (NP x n_dims x NP)
+    R = X - permute(X, [3 2 1]); % Relative positions
+    V_rels = V-permute(V, [3 2 1]); % Relative velocities
+    rs = vecnorm(R,2,2); % Euclidian norm on the second channel to 
+                         % get the length of each spring.
+                         % This can then be used to construct r_bars.
+    r_bars = R./rs; % Shape - (NP x n_dims x NP), will be anti symmetric.
+    % Replace NaN with zeros. 
+    r_bars(isnan(r_bars))=0;
+    % We now want to compute the forces according to the formula (5) of the
+    % lab instructions.
+
+    % SPRING
+    F_spring = ks.*(rs-L); % Shape (NP x 1 x NP), one spring from each 
+                           % particle to another. ks couble be a matrix of
+                           % shape (NP x 1 x NP) with different strengths
+                           % for each spring.
+    % DAMPING
+    F_damping = kd.*dot(V_rels,R,2)./rs;
+    F_damping(isnan(F_damping))=0;
+    % Multiply with the unit vectors of each individual spring.
+    F_tensor = -(F_spring+F_damping).*r_bars; % (NP x n_dims x NP)
+    % The Entries F(i,:,i) should be zero since this corresponds to the
+    % force asserted on particle i on particle i. Which is always zero.
+    F_mat = sum(F_tensor,3); % Sum along last channel.
+                             % Last channel corresponds to each
+                             % contribution from each spring
+    % F_mat now have the correct shape of (NP x n_dims)
+    % This has only taken into account the spring system.
+    % Now add gravity!
+    if size(F_mat,2)==2
+        F_g = ms*g*[0 -1]; % (NPx1)x(1x2) => (NPx2)
+    else
+        F_g = ms*g*[0 0 -1]; % (NPx1)x(1x3) => (NPx3)
+    end
+    F_mat = F_mat+F_g;
 end
 
 

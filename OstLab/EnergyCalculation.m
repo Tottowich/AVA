@@ -44,6 +44,7 @@ function [E,Ek,Es,Ep] = EnergyCalculation(X,V,ms,g,ks,L)
 R = X - permute(X, [1 4 3 2]); % Relative positions, how long are the springs.
 
 rs = vecnorm(R,2,3); % The magnitude of each strings.
+keyboard
 spring_energies = squeeze(0.5*ks.*((rs-L).^2)); % The energy of the strings.
 % Set all diagonals to zero.
 for n =1:n_dims
@@ -57,12 +58,12 @@ Es = sum(spring_energies,[2,3])/2;
 % KINETIC
 vs = vecnorm(V,2,3); % Magnitude of velocity of each particle.
 % vs now have the shape (t_steps x NP)
-Ek = vs.^2*ms/2; % (t_steps x NP)x(NP x 1) -> (t_steps x 1)
+Ek = vs.^2.*ms/2; % (t_steps x NP)x(NP x 1) -> (t_steps x 1)
 
 % POTENTIAL
 
 ys = X(:,:,2); % (t_steps x NP)
-Ep = g*ys*ms; % (t_steps x NP)x(NP x 1) -> (t_steps x 1) 
+Ep = g*ys.*ms; % (t_steps x NP)x(NP x 1) -> (t_steps x 1) 
 
 % TOTAL
 

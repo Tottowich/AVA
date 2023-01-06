@@ -150,7 +150,6 @@ hold off;
 
 function F_mat = ForceFunction(X,V,ks,kd,L)
     % This is the force function of the current lab exercise.
-    % No damping or gravity.
     % X has shape (NP x n_dims)
     % V has the same shape.
     % We want to return the force matrix of the same shape as X and V.
@@ -175,6 +174,7 @@ function F_mat = ForceFunction(X,V,ks,kd,L)
     % DAMPING
     F_damping = kd.*dot(V_rels,R,2)./rs;
     F_damping(isnan(F_damping))=0;
+    keyboard
     % Multiply with the unit vectors of each individual spring.
     F_tensor = -(F_spring+F_damping).*r_bars; % (NP x n_dims x NP)
     % The Entries F(i,:,i) should be zero since this corresponds to the
