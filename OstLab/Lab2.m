@@ -31,8 +31,9 @@
 %   F12 = -ks(abs(r(1,2)-L)*r_bar+kd*r'.r_bar*r_bar
 %
 
-% Exercies 2. Revloves around 2D spring system with no damping.
-
+% Exercies 2. Revloves around 2D spring system
+clear all
+close all
 % -----GIVEN-----
 % Initial position of the two particles.
 x1 = [0 0]; % Refrensed as particle 1. (x,y)
@@ -58,7 +59,7 @@ v3 = [0 0]; % REMOVE
 %      F(i,j) = -ks(abs(r(i,j))-L)*r_bar, Must be a vector!
 % Note: r(i,j) is the distance between particle i and particle j
 T = 10;
-dt = 0.01;
+dt = 0.001;
 t_steps = ceil(T/dt);
 M = diag(masses);
 X_init = [x1;x2];
@@ -67,23 +68,14 @@ F = @(X,V) ForceFunction(X,V,ks,kd,L); % Anonymous function for LeapFrog
 [X,V] = LeapFrog(X_init,V_init,F,M,t_steps,dt);
 %timeit(@() LeapFrog(X_init,V_init,F,M,t_steps,dt))
 % a) Visualize the trajectory of the system.
-%VisualizeSpringSystem(X)
+%VisualizeSpringSystem(X,ones(2))
 % b) Calculate the energies.
 [E,Ek,Es,Ep] = EnergyCalculation(X,V,masses,g,ks,L);
 
 ts = linspace(0,T,t_steps);
 % Plot energies over time.
 figure(1);
-plot(ts,[E,Ek,Es,Ep])
-legend("Total","Kinetic","Spring","Potential",Location="best")
-xlabel("Time ( s )")
-ylabel("Energy ( J )")
-if kd>0
-    title("Energy over time in the coupled damped spring system. kd = "+kd)
-else
-    title("Energy over time in the coupled non damped spring system.")
-end
-grid on;
+PlotEnergies(E,Ek,Es,Ep,ts,kd)
 % Calculate the difference in energy per occilation.
 %E_diff = max(E)-min(E);
 %fprintf("\nUsing %.4f results in maximum \nrelative differenceo of %.3f %%\n",dt,E_diff/max(E)*100)
@@ -116,18 +108,19 @@ grid on;
 title("Length of spring between particle (1) and  (2)")
 xlabel("Time (s)")
 ylabel("Length (m)")
-[amp_peaks,amp_ids] = findpeaks(amps);
-amp_times = amp_ids*dt;
-amp_init = amps(1); % Initial amplitude of the spring.
-% Find first peak which does not exceed 10% of the initial amplitude.
-id_amp = find(amp_peaks<0.1*amp_init,1);
-% Elapsed time can be found in amp_times
-fprintf("\nTime to reach 10%% of initial amplitude using the following values:\n")
-fprintf("Initial amplitude = %.3f\n",amp_init);
-fprintf("kd = %.3f\n",kd);
-fprintf("ks = %.3f\n",ks);
-fprintf("Time to reach = %.3f\n",amp_times(id_amp));
-
+if v==0
+    % Find first peak which does not exceed 10% of the initial amplitude.
+    [amp_peaks,amp_ids] = findpeaks(amps);
+    amp_times = amp_ids*dt;
+    amp_init = amps(1); % Initial amplitude of the spring.
+    id_amp = find(amp_peaks<0.1*amp_init,1);
+    % Elapsed time can be found in amp_times
+    fprintf("\nTime to reach 10%% of initial amplitude using the following values:\n")
+    fprintf("Initial amplitude = %.3f\n",amp_init);
+    fprintf("kd = %.3f\n",kd);
+    fprintf("ks = %.3f\n",ks);
+    fprintf("Time to reach = %.3f\n",amp_times(id_amp));
+end
 % d) Calculate the angular momentum
 ang_mom = AngularMomentum(X,V,masses);
 % We estimate the spring system as two point masses.
@@ -174,7 +167,6 @@ function F_mat = ForceFunction(X,V,ks,kd,L)
     % DAMPING
     F_damping = kd.*dot(V_rels,R,2)./rs;
     F_damping(isnan(F_damping))=0;
-    keyboard
     % Multiply with the unit vectors of each individual spring.
     F_tensor = -(F_spring+F_damping).*r_bars; % (NP x n_dims x NP)
     % The Entries F(i,:,i) should be zero since this corresponds to the

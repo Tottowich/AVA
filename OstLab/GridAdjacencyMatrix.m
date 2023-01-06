@@ -29,22 +29,22 @@ function [A,diagonals] = GridAdjacencyMatrix(Nr,Nc)
 %   diagonals - (mat) The points of diagonal springs.
 %
 horizontal = repmat([ones(Nc-1, 1); 0], Nr, 1);% Make the first diagonal vector
-                                             %   (for horizontal connections)
+                                               % (for horizontal connections)
 
-horizontal = horizontal(1:end-1);                % Remove the last value
+horizontal = horizontal(1:end-1);              % Remove the last value
 
-righ_to_left = [0; horizontal(1:(Nc*(Nr-1)))]; % Make the second diagonal vector
-                                             %   (for anti-diagonal connections)
+righ_to_left = [0; horizontal(1:(Nc*(Nr-1)))]; % Make the second diagonal
+                                   % vector (for anti-diagonal connections)
 
-vertical = ones(Nc*(Nr-1), 1);                 % Make the third diagonal vector
-                                             %   (for vertical connections)
+vertical = ones(Nc*(Nr-1), 1);         % Make the third diagonal vector
+                                       %   (for vertical connections)
 
-left_to_right = righ_to_left(2:end-1);            % Make the fourth diagonal vector
-                                             %   (for diagonal connections)
-A = diag(horizontal, 1)+...                  % Add the diagonals to a zero matrix
-      diag(righ_to_left, Nc-1)+...
-      diag(vertical, Nc)+...
-      diag(left_to_right, Nc+1);
+left_to_right = righ_to_left(2:end-1); % Make the fourth diagonal vector
+                                       %   (for diagonal connections)
+A = diag(horizontal, 1)+...            % Add the diagonals to a zero matrix
+    diag(righ_to_left, Nc-1)+...
+    diag(vertical, Nc)+...
+    diag(left_to_right, Nc+1);
 A = A+A.'; % This makes the Adjacency matrix symmetric.
 diagonals = diag(righ_to_left, Nc-1)+diag(left_to_right, Nc+1);
 diagonals = diagonals+diagonals';

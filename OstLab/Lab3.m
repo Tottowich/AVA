@@ -7,26 +7,34 @@
 % The force function will now be more complicated but it will probabily be
 % significantly faster and more general.
 %
-
+clear
+close all
 % ------- GIVEN PROPERTIES -------
 Nc = 8; % Number of columns of the 2D object.
 Nr = 6; % Rows of columns of the 2D object.
 masses = 1; % All particles have mass 1.
-ks = 100;
-kd = 2;
+ks = 10;
+kd = 1;
 g = 1;
 dt = 2e-3;
 L = 1; % Evenly distributed particles => sqrt(2) on diagonal.
-% --------------------------------
-NP = Nc*Nr;
 n_dims = 2;
+N_circles = 16; % Number of circles that make up the floor
+dist_circle = 0.1; % 0-1 describing how large portion of radius to seperate.
+% --------------------------------------
+
+r_circle = L; % Randius of those circles.
+NP = Nc*Nr; % Total number of particles in the spring grid.
+
 % ------- Set up the 2D object --------
 % The object is denoted by the matrix X
 x = meshgrid(0:L:(Nc-1)/L,0:L:(Nr-1)/L);
+% y = meshgrid(0:L:(Nr-1)/L,0:L:(Nc-1)/L)';
 y = flip(meshgrid(0:L:(Nr-1)/L,0:L:(Nc-1)/L)',1);
 X = cat(3,x',y');
 X = reshape(X,[NP n_dims]); % Flatten the matrix.
 % X now has Shape (NP x n_dims)
+
 % First Nc entries in X is the top row, Nc+1->2*Nc second row and so on.
 V = zeros(NP,n_dims);
 % -------------------------------------
@@ -34,24 +42,20 @@ V = zeros(NP,n_dims);
 % Now we can construct the adjecency matrix for the list of particles.
 % Which we can use as a mask to remove the forces from non connected
 % particles.
-
-% Figure to check connection.
-figure(4)
 [A,diagonals] = GridAdjacencyMatrix(Nr,Nc);
-gplot(A,X,'b-o')
-grid on
-axis padded
 
+% 'A' is the adjacency matrix, diagonals are only the diagonal springs.
+% 
 
 % ------- Set up the 2D spring --------
 % Now construct 3 string matrices.
 % These matrices are; spring constant per spring
 %                     spring damping coefficients
 %                     spring resting length
-
 L_springs = zeros(NP,1,NP);
-L_springs(A==1) = L;
-L_springs(diagonals==1) = sqrt(2)*L; % NOTE: Assuming equaly distributed.
+L_springs(A==1) = L; % Set every connection to L
+% But diagonals are longer!
+L_springs(diagonals==1) = sqrt(2)*L;
 
 ks_springs = zeros(NP,1,NP);
 ks_springs(A==1) = ks;
@@ -65,20 +69,25 @@ ms = ones(NP,1)*masses; % All particles have the same mass.
 M = diag(ms);
 
 % Testing with some initial velocity
-V(Nc,:) = [50,50]; % Diagonal velocity of the top right particle.
+V(ceil(Nc/2)*3,:) = [5,5]; % Diagonal velocity of the top right particle.
+
+% Create the floor
+circle_surface = BuildSurface(N_circles,r_circle,dist_circle,n_dims);
 
 % Time step set-up.
-T = 0.5;
+T = 3;
 t_steps = T/dt;
-ts = 0:dt:T;
+ts = 0:dt:T-dt;
 
 % F = @(X,V) ForceFunction(X,V,A,ms,g,ks_springs,kd_springs,L_springs);
 F = @(X,V) ForceFunction(X,V,ms,g,ks_springs,kd_springs,L_springs);
 [Xs,Vs] = LeapFrog(X,V,F,M,t_steps,dt);
-% VisualizeSpringSystem(Xs,A)
-% close
+figure(1)
+VisualizeSpringSystemWithSurface(Xs,A,circle_surface)% close
 % disp("Saved to 'ExampleVideo.avi'")
 [E,Ek,Es,Ep] = EnergyCalculation(Xs,Vs,ms,g,ks_springs,L_springs);
+figure(2);
+PlotEnergies(E,Ek,Es,Ep,ts,kd)
 function F_mat = ForceFunction(X,V,ms,g,ks,kd,L)
     % This is the force function of the current lab exercise.
     %
