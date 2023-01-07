@@ -44,7 +44,7 @@ for t = 2:10:size(X,1)
     writeVideo(MOVE,getframe(gcf)); % Get a snapshot of the active figure frame
     % End of main time loop
 end
-close(MOVE); % Close and save the avi-file
 hold off
+close(MOVE); % Close and save the avi-file
 end
 

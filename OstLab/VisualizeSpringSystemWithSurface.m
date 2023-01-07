@@ -10,6 +10,10 @@ function  VisualizeSpringSystemWithSurface(X,A,circle_surface)
 %
 %   A - (mat) Adjacency matrix of the spring system.
 %
+%   circle_surface - (mat) Matrix of shape (N x n_dims+1). For each circle
+%                          there is center (x,y,z) + radius.
+%
+[t_steps,NP,n_dims] = size(X);
 % Initialize animation file before main loop
 set(gcf,'Position',get(0,'Screensize')); % Maximize the window for quality
 MOVE = VideoWriter('ExampleVideo.avi'); % Create an video struct, "MOVE.",
@@ -32,7 +36,7 @@ hold on
 x = squeeze(X(1,:,1));
 y = squeeze(X(1,:,2));
 springs_linespec = "k.-";
-SPRINGS = plot(graph(A),springs_linespec,'XData',x,'YData',y);%,'NodeLabel',{});
+SPRINGS = plot(graph(A),springs_linespec,'XData',x,'YData',y,'NodeLabel',{});
 
 % Display the circular floor.
 N_cirlces = length(circle_surface);
@@ -41,16 +45,16 @@ for n = 1:N_cirlces
     % Since the rectangle has position based bottom left, and top right.
     % circle_surface contains the center of the circle, find ["bottom
     % left","top right"] for the circle.
-    c = circle_surface(n).center;
-    r = circle_surface(n).radius;
-    pos = [c(1),c(2),r,r];
+    c = circle_surface(n,1:n_dims);
+    r = circle_surface(n,end);
+    pos = [c(1)-r,c(2)-r,2*r,2*r];
     circles(n) = rectangle(Curvature=[1,1],Position=pos);
     % Create the rectangle which will be a circle.
 
 end
 % Begin main time loop
 figure(1)
-for t = 2:10:size(X,1)
+for t = 2:8:size(X,1)
     x = squeeze(X(t,:,1));
     y = squeeze(X(t,:,2));
     % Update the grid.
@@ -59,7 +63,7 @@ for t = 2:10:size(X,1)
     writeVideo(MOVE,getframe(gcf)); % Get a snapshot of the active figure frame
     % End of main time loop
 end
-close(MOVE); % Close and save the avi-file
 hold off
+close(MOVE); % Close and save the avi-file
 end
 

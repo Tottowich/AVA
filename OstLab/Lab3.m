@@ -11,39 +11,51 @@ clear
 close all
 % ------- GIVEN PROPERTIES -------
 Nc = 8; % Number of columns of the 2D object.
-Nr = 6; % Rows of columns of the 2D object.
+Nr = 4; % Rows of columns of the 2D object.
 masses = 1; % All particles have mass 1.
-ks = 10;
-kd = 1;
+ks = 100;
+kd = 0;
 g = 1;
 dt = 2e-3;
 L = 1; % Evenly distributed particles => sqrt(2) on diagonal.
 n_dims = 2;
 N_circles = 16; % Number of circles that make up the floor
-dist_circle = 0.1; % 0-1 describing how large portion of radius to seperate.
+dist_circle = 0.1; % [0<->1] describing how large portion of radius to seperate.
 % --------------------------------------
-
+start_x = 0;
+start_y = 1;
+vx_init = 3;
+vy_init = 0;
 r_circle = L; % Randius of those circles.
 NP = Nc*Nr; % Total number of particles in the spring grid.
+% Time step set-up.
+T = 5;
+t_steps = T/dt;
+ts = 0:dt:T-dt;
 
 % ------- Set up the 2D object --------
 % The object is denoted by the matrix X
-x = meshgrid(0:L:(Nc-1)/L,0:L:(Nr-1)/L);
+x = meshgrid(0:L:(Nc-1)/L,0:L:(Nr-1)/L)+start_x;
 % y = meshgrid(0:L:(Nr-1)/L,0:L:(Nc-1)/L)';
-y = flip(meshgrid(0:L:(Nr-1)/L,0:L:(Nc-1)/L)',1);
-X = cat(3,x',y');
-X = reshape(X,[NP n_dims]); % Flatten the matrix.
+y = flip(meshgrid(0:L:(Nr-1)/L,0:L:(Nc-1)/L)',1)+start_y;
+X_init = cat(3,x',y');
+X_init = reshape(X_init,[NP n_dims]); % Flatten the matrix.
 % X now has Shape (NP x n_dims)
 
 % First Nc entries in X is the top row, Nc+1->2*Nc second row and so on.
-V = zeros(NP,n_dims);
+V_init = zeros(NP,n_dims);
+% Testing with some initial velocity
+% V_init(ceil(Nc/2)*3,:) = [5,5]; % Diagonal velocity of the top right particle.
+V_init(:,1)=vx_init;
+V_init(:,2)=vy_init;
+
 % -------------------------------------
 
 % Now we can construct the adjecency matrix for the list of particles.
 % Which we can use as a mask to remove the forces from non connected
 % particles.
 [A,diagonals] = GridAdjacencyMatrix(Nr,Nc);
-
+% A = sparse(A);
 % 'A' is the adjacency matrix, diagonals are only the diagonal springs.
 % 
 
@@ -68,26 +80,31 @@ kd_springs(A==1) = kd;
 ms = ones(NP,1)*masses; % All particles have the same mass.
 M = diag(ms);
 
-% Testing with some initial velocity
-V(ceil(Nc/2)*3,:) = [5,5]; % Diagonal velocity of the top right particle.
-
 % Create the floor
 circle_surface = BuildSurface(N_circles,r_circle,dist_circle,n_dims);
 
-% Time step set-up.
-T = 3;
-t_steps = T/dt;
-ts = 0:dt:T-dt;
 
 % F = @(X,V) ForceFunction(X,V,A,ms,g,ks_springs,kd_springs,L_springs);
 F = @(X,V) ForceFunction(X,V,ms,g,ks_springs,kd_springs,L_springs);
-[Xs,Vs] = LeapFrog(X,V,F,M,t_steps,dt);
+[X,V] = LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt);
+% timeit(@() LeapFrog(X_init,V_init,F,M,t_steps,dt))
+
 figure(1)
-VisualizeSpringSystemWithSurface(Xs,A,circle_surface)% close
+VisualizeSpringSystemWithSurface(X,A,circle_surface)% close
 % disp("Saved to 'ExampleVideo.avi'")
-[E,Ek,Es,Ep] = EnergyCalculation(Xs,Vs,ms,g,ks_springs,L_springs);
-figure(2);
+figure(2)
+[E,Ek,Es,Ep] = EnergyCalculation(X,V,ms,g,ks_springs,L_springs);
 PlotEnergies(E,Ek,Es,Ep,ts,kd)
+figure(3);
+% Track center of mass.
+center_mass_pos = squeeze(mean(X.*ms',2));
+center_mass_vel = squeeze(dot(X,V,2))./sum(ms);
+plot(ts,center_mass_vel(:,1))
+grid on
+figure(4)
+plot(ts,center_mass_pos(:,1))
+grid on
+title("Vx center of mass")
 function F_mat = ForceFunction(X,V,ms,g,ks,kd,L)
     % This is the force function of the current lab exercise.
     %
@@ -99,7 +116,7 @@ function F_mat = ForceFunction(X,V,ms,g,ks,kd,L)
     %             Shape: (NP x n_dims)
     %   ms - (vec) The masses of each particle.
     %             Shape: (NP x 1)
-    %   g - (float) gravitational constant, typically 9.82
+    %   g - (float) gravitational acceleration constant.
     %
     %   ks - (mat/float) either matrix of shape (NP x 1 x NP) or float.
     %                    If matrix then ks(i,j) indicates coefficient of
