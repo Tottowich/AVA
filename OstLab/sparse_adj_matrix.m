@@ -1,4 +1,4 @@
-function [ii,jj] = sparse_adj_matrix(sz, r, p, st)
+function [ii jj] = sparse_adj_matrix(sz, r, p, st)
 %
 % Construct sparse adjacency matrix (provides ii and jj indices into the
 % matrix)

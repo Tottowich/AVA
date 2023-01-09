@@ -54,7 +54,7 @@ for n = 1:N_cirlces
 end
 % Begin main time loop
 figure(1)
-for t = 2:8:size(X,1)
+for t = 2:5:size(X,1)
     x = squeeze(X(t,:,1));
     y = squeeze(X(t,:,2));
     % Update the grid.

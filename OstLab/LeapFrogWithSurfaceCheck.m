@@ -66,7 +66,7 @@ function [X,V] = LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_ste
         r_bars = r./pos_diff;
         % pos_diff has Shape: (NP x N_circles)
         % Check which particles are intersecting
-        inter = squeeze(pos_diff)<radii;
+        inter = squeeze(pos_diff)<=radii;
         [inter_circles,inter_particles] = find(inter==1);
         % Only intersect with one circle. Using small dt should eliminate this
         % issue but for robustness select first cirle from left to right.
@@ -84,45 +84,8 @@ function [X,V] = LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_ste
         x_new(inter_particles,:) = x_new(inter_particles,:)+bounce.*n_hat;
         X(n+1,:,:) = x_new;
         V(n+1,:,:) = v;
+%         n_hats{n+1} = n_hat;
     end
-
 end
-
-% function [X,V] = CheckSurface(x_new,x_old,v_new,v_old,circle_surface)
-%     % This functions is seperate to reduce cluttering.
-%     %
-%     % INPUT
-%     %
-%     %   x_new - (mat) The proposed new positional state of the grid.
-%     %
-%     %   x_old - (mat) The previous position, used to check the direction
-%     %                 which the particle might have bounced.
-%     %   v_new - (mat) proposed velocity of the next state.
-%     %
-%     %   v_old - (mat) The previous velocity, used to check the where it
-%     %                 bounced.
-%     %   circle_surface - (struct) All circles which build up the surface.
-%     %
-%     
-%     [N_circles,n_dims] = size(circle_surface);
-%     [NP,n_dims] = size(x_new);
-%     n_dims = n_dims - 1; % Last entry of circle_surface is the radius.
-% 
-%     % We need to check if any of the particles of the grid described with
-%     % x_new are inside any surface circle. If so, propel that particle above the
-%     % surface as if it had bounced and change the velocity accordingly.
-%     
-%     % NOTE: There is a chance that a particle is in the intersection of two
-%     %       circles.
-%     
-%     centers = circle_surface(:,1:end-1); % (N_particles x n_dims)
-%     radii = circle_surface(:,end);
-%     % Calculate relative position between each particle and each circle.
-%     pos_diff = x_new-permute(centers,[3 2 1]);
-%     % Generate a distance matrix between each particle and each circle.
-%     
-% 
-% 
-% end
 
 

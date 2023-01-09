@@ -22,14 +22,14 @@ n_dims = 2;
 N_circles = 16; % Number of circles that make up the floor
 dist_circle = 0.1; % [0<->1] describing how large portion of radius to seperate.
 % --------------------------------------
+r_circle = L; % Randius of the circles which constructs the surface
 start_x = 0;
-start_y = 1;
+start_y = r_circle;
 vx_init = 3;
 vy_init = 0;
-r_circle = L; % Randius of those circles.
 NP = Nc*Nr; % Total number of particles in the spring grid.
 % Time step set-up.
-T = 5;
+T = 2;
 t_steps = T/dt;
 ts = 0:dt:T-dt;
 
@@ -38,6 +38,8 @@ ts = 0:dt:T-dt;
 x = meshgrid(0:L:(Nc-1)/L,0:L:(Nr-1)/L)+start_x;
 % y = meshgrid(0:L:(Nr-1)/L,0:L:(Nc-1)/L)';
 y = flip(meshgrid(0:L:(Nr-1)/L,0:L:(Nc-1)/L)',1)+start_y;
+% size(x')
+% size(y')
 X_init = cat(3,x',y');
 X_init = reshape(X_init,[NP n_dims]); % Flatten the matrix.
 % X now has Shape (NP x n_dims)
@@ -87,7 +89,7 @@ circle_surface = BuildSurface(N_circles,r_circle,dist_circle,n_dims);
 % F = @(X,V) ForceFunction(X,V,A,ms,g,ks_springs,kd_springs,L_springs);
 F = @(X,V) ForceFunction(X,V,ms,g,ks_springs,kd_springs,L_springs);
 [X,V] = LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt);
-% timeit(@() LeapFrog(X_init,V_init,F,M,t_steps,dt))
+%timeit(@() LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt));
 
 figure(1)
 VisualizeSpringSystemWithSurface(X,A,circle_surface)% close
@@ -97,14 +99,16 @@ figure(2)
 PlotEnergies(E,Ek,Es,Ep,ts,kd)
 figure(3);
 % Track center of mass.
-center_mass_pos = squeeze(mean(X.*ms',2));
-center_mass_vel = squeeze(dot(X,V,2))./sum(ms);
+center_mass_pos = squeeze(sum(X.*ms',2));
+center_mass_vel = squeeze(sum(V.*ms',2))./sum(ms);
 plot(ts,center_mass_vel(:,1))
 grid on
+title("Vx center of mass")
 figure(4)
 plot(ts,center_mass_pos(:,1))
 grid on
-title("Vx center of mass")
+title("X center of mass")
+
 function F_mat = ForceFunction(X,V,ms,g,ks,kd,L)
     % This is the force function of the current lab exercise.
     %
