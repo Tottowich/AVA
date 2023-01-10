@@ -24,14 +24,18 @@ Nx_circles = 10; % Number of circles that make up the floor in the x-direction
 Ny_circles = 6; % Number of circles that make up the floor in the y-direction
 dist_circle = 0.1; % [0<->1] describing how large portion of radius to seperate.
 r_circle = L; % Randius of the circles which constructs the surface
-v_init = [2,0,-20];
+v_init = [3,0,-20];
 % --------------------------------------
+visualize = 1;
+record = 1;
+name = "Video/Lab5/Lab5MultiDim";
+
 start_x = 0;
 start_y = 0;
 start_z = r_circle*2;
 NP = Nx*Ny*Nz; % Total number of particles in the spring grid.
 % Time step set-up.
-T = 1.5;
+T = 2;
 t_steps = T/dt;
 ts = 0:dt:T-dt;
 
@@ -277,10 +281,11 @@ F = @(X,V) ForceFunction(X,V,ms,g,ks_springs,kd_springs,L_springs);
 % Time to simulate using T=8,dt=2*10^-3,
 % Nx=8,Ny=4,Nz=3,Nx_circles=10,Ny_circles=3.
 % t3d = 2.6591 s
-%%
+%
 figure(1)
-record = 1; % 1 to record
-VisualizeSpringSystemWithSurface3D(X,A,circle_surface,record)% close
+if visualize
+    VisualizeSpringSystemWithSurface3D(X,A,circle_surface,record,name)
+end
 %%
 % disp("Saved to 'ExampleVideo.avi'")
 figure(2)

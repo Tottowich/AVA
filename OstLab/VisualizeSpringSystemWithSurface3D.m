@@ -1,4 +1,4 @@
-function  VisualizeSpringSystemWithSurface3D(X,A,circle_surface,record)
+function  VisualizeSpringSystemWithSurface3D(X,A,circle_surface,record,name)
 %VISUALIZECHEESE Visualize the simulated spring system'cheese'
 %   Function used to animated the system of springs.
 %
@@ -18,7 +18,7 @@ set(gcf,'Position',get(0,'Screensize')); % Maximize the window for quality
 figure(1)
 if record
     % Initialize animation file before main loop
-    MOVE = VideoWriter('ExampleVideo.avi'); % Create an video struct, "MOVE.",
+    MOVE = VideoWriter(name+'.avi'); % Create an video struct, "MOVE.",
     % with the output file ExampleVideo.avi
     MOVE.Quality = 50; % Set the quality (0-100)
     MOVE.FrameRate = 25; % Set frames per seond to PAL standard (animation speed)
