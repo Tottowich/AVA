@@ -14,8 +14,8 @@ Nc = 8; % Number of columns of the 2D object.
 Nr = 4; % Rows of columns of the 2D object.
 masses = 1; % All particles have mass 1.
 ks = 100;
-kd = 0;
-g = 1;
+kd = 5;
+g = 10;
 dt = 2e-3;
 L = 1; % Evenly distributed particles => sqrt(2) on diagonal.
 n_dims = 2;
@@ -24,12 +24,12 @@ dist_circle = 0.1; % [0<->1] describing how large portion of radius to seperate.
 % --------------------------------------
 r_circle = L; % Randius of the circles which constructs the surface
 start_x = 0;
-start_y = r_circle;
-vx_init = 3;
+start_y = r_circle*2;
+vx_init = 0.5;
 vy_init = 0;
 NP = Nc*Nr; % Total number of particles in the spring grid.
 % Time step set-up.
-T = 2;
+T = 4;
 t_steps = T/dt;
 ts = 0:dt:T-dt;
 

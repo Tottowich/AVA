@@ -35,9 +35,9 @@ function [X,V] = LeapFrog(X_init,V_init,F,M,t_steps,dt)
 %
     NP = size(X_init,1); % Get the number of particles
     n_dims = size(X_init,2); % Get the number of dimensions.
-    if n_dims>2
-        error('Error\n See LeapFrog3 for higher dimensions, LeapFrog is indended for 2 dimensional not: '+n_dims);
-    end
+%     if n_dims>2
+%         error('Error\n See LeapFrog3 for higher dimensions, LeapFrog is indended for 2 dimensional not: '+n_dims);
+%     end
     X = zeros(t_steps,NP,n_dims); % Initialize the position tensor.
     V = zeros(t_steps,NP,n_dims);
     X(1,:,:) = X_init; % Set initial position.

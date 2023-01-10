@@ -65,8 +65,10 @@ Ek = vs.^2*ms/2; % (t_steps x NP)x(NP x 1) -> (t_steps x 1)
 
 % POTENTIAL
 
-ys = X(:,:,2); % (t_steps x NP)
-Ep = g*ys*ms; % (t_steps x NP)x(NP x 1) -> (t_steps x 1) 
+h = X(:,:,2*(2==n_dims)+3*(3==n_dims)); % (t_steps x NP)
+
+Ep = g*h*ms; % (t_steps x NP)x(NP x 1) -> (t_steps x 1)
+
 
 % TOTAL
 
