@@ -11,28 +11,28 @@ clear
 close all
 % ------- GIVEN PROPERTIES -------
 Nx = 8; % Number of particles in x direction
-Ny = 4; %
-Nz = 3; % 
+Ny = 5; %
+Nz = 4; % 
 masses = 1; % All particles have mass 1.
 ks = 1000;
 kd = 50;
-g = 10;
+g = 2;
 dt = 2e-3;
 L = 1; % Evenly distributed particles => sqrt(2) on diagonal.
 n_dims = 3;
-Nx_circles = 16; % Number of circles that make up the floor in the x-direction
+Nx_circles = 10; % Number of circles that make up the floor in the x-direction
 Ny_circles = 6; % Number of circles that make up the floor in the y-direction
 dist_circle = 0.1; % [0<->1] describing how large portion of radius to seperate.
 r_circle = L; % Randius of the circles which constructs the surface
 v_init = [3,0,0];
 % --------------------------------------
-visualize = 0;
+visualize = 1;
 record = 0;
-name = "Video/Lab5/Lab5MultiDim";
+name = "Video/Lab6/Lab6MultiDim";
 
 start_x = 0;
 start_y = 0;
-start_z = r_circle;
+start_z = r_circle*2;
 NP = Nx*Ny*Nz; % Total number of particles in the spring grid.
 % Time step set-up.
 T = 2;
@@ -48,19 +48,15 @@ z = (Nz-1)/L:-L:0;
 xs = xs+start_x;
 ys = ys+start_y;
 zs = zs+start_z;
-% X = meshgrid(x,y,z);
-% scatter3(X)
 X_init = cat(4,xs,ys,zs);
 X_init = reshape(X_init,[NP n_dims]); % Flatten the matrix.
-
+%[A,X_init] = bucky;
+%X_init(:,3) = X_init(:,3)+start_z;
 % X now has Shape (NP x n_dims)
-
-
 
 % First Nc entries in X is the top row, Nc+1->2*Nc second row and so on.
 V_init = zeros(NP,n_dims);
 % Testing with some initial velocity
-% V_init(ceil(Nc/2)*3,:) = [5,5]; % Diagonal velocity of the top right particle.
 V_init = V_init+v_init;
 
 % -------------------------------------
@@ -119,16 +115,15 @@ figure(2)
 PlotEnergies(E,Ek,Es,Ep,ts,kd)
 figure(3);
 % Track center of mass.
+center_mass_pos = squeeze(sum(X.*ms',2));
 center_mass_vel = squeeze(sum(V.*ms',2))./sum(ms);
 plot(ts,center_mass_vel(:,1))
 grid on
 title("Vx center of mass")
 figure(4)
-vx_diff = center_mass_vel(1,1)-center_mass_vel(end,1);
-% Average acceleration is therefore:
-ax_ave = vx_diff/T;
-% f_mu = f_x =ma_x=mu*mg*cos(theta), theta=0. =>
-mu = ax_ave/g
+plot(ts,center_mass_pos(:,1))
+grid on
+title("X center of mass")
 
 function F_mat = ForceFunction(X,V,ms,g,ks,kd,L)
     % This is the force function of the current lab exercise.
