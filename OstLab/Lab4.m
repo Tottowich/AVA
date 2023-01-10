@@ -21,15 +21,19 @@ L = 1; % Evenly distributed particles => sqrt(2) on diagonal.
 n_dims = 2;
 N_circles = 16; % Number of circles that make up the floor
 dist_circle = 0.1; % [0<->1] describing how large portion of radius to seperate.
-r_circle = (3/4)*L; % Randius of the circles which constructs the surface
+r_circle = 0.75*L; % Randius of the circles which constructs the surface
 vx_init = 10;
 % --------------------------------------
+visualize=0;
+record = 1;
+name = "Video/Lab4/Lab4GridSpringsB";
+
 start_x = 0;
 start_y = r_circle;
 vy_init = 0;
 NP = Nc*Nr; % Total number of particles in the spring grid.
 % Time step set-up.
-T = 1;
+T = 0.8;
 t_steps = T/dt;
 ts = 0:dt:T-dt;
 
@@ -89,23 +93,27 @@ F = @(X,V) ForceFunction(X,V,ms,g,ks_springs,kd_springs,L_springs);
 [X,V] = LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt);
 % timeit(@() LeapFrog(X_init,V_init,F,M,t_steps,dt))
 
-figure(1)
-VisualizeSpringSystemWithSurface(X,A,circle_surface)% close
+if visualize
+    figure(1)
+    VisualizeSpringSystemWithSurface(X,A,circle_surface,record,name)% close
+end
 % disp("Saved to 'ExampleVideo.avi'")
 figure(2)
 [E,Ek,Es,Ep] = EnergyCalculation(X,V,ms,g,ks_springs,L_springs);
 PlotEnergies(E,Ek,Es,Ep,ts,kd)
 figure(3);
 % Track center of mass.
-center_mass_pos = squeeze(sum(X.*ms',2));
 center_mass_vel = squeeze(sum(V.*ms',2))./sum(ms);
 plot(ts,center_mass_vel(:,1))
 grid on
 title("Vx center of mass")
-figure(4)
-plot(ts,center_mass_pos(:,1))
-grid on
-title("X center of mass")
+vx_diff = center_mass_vel(1,1)-center_mass_vel(end,1);
+% Average acceleration is therefore:
+ax_ave = vx_diff/T;
+% f_mu = f_x =ma_x=mu*mg*cos(theta), theta=0. =>
+mu = ax_ave/g;
+% v = 5, kd=5 => 0.15
+% v = 10, kd=50 => 0.16
 
 function F_mat = ForceFunction(X,V,ms,g,ks,kd,L)
     % This is the force function of the current lab exercise.

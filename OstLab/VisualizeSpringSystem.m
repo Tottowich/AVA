@@ -1,4 +1,4 @@
-function  VisualizeSpringSystem(X,A)
+function  VisualizeSpringSystem(X,A,record,name)
 %VISUALIZECHEESE Visualize the simulated spring system'cheese'
 %   Function used to animated the system of springs.
 %
@@ -10,13 +10,19 @@ function  VisualizeSpringSystem(X,A)
 %
 %   A - (mat) Adjacency matrix of the spring system.
 %
+%   record - (bool) 0 if not record.
+%
+%   name - (string) Name of recording
 % Initialize animation file before main loop
+[t_steps,NP,n_dims] = size(X);
 set(gcf,'Position',get(0,'Screensize')); % Maximize the window for quality
-MOVE = VideoWriter('ExampleVideo.avi'); % Create an video struct, "MOVE.",
-% with the output file ExampleVideo.avi
-MOVE.Quality = 100; % Set the quality (0-100)
-MOVE.FrameRate = 25; % Set frames per seond to PAL standard (animation speed)
-open(MOVE);
+if record
+    MOVE = VideoWriter(name+".avi"); % Create an video struct, "MOVE.",
+    % with the output file ExampleVideo.avi
+    MOVE.Quality = 60; % Set the quality (0-100)
+    MOVE.FrameRate = 25; % Set frames per seond to PAL standard (animation speed)
+    open(MOVE);
+end
 set(gca,'nextplot','replacechildren');
 % Set the limits to avoid window stuttering.
 minminx = min(X(:,:,1),[],'all');
@@ -40,11 +46,18 @@ for t = 2:10:size(X,1)
     y = squeeze(X(t,:,2));
     % Update the grid.
     set(SPRINGS,'XData',x,'YData',y)
+    if record
+        writeVideo(MOVE,getframe(gcf)); % Get a snapshot of the active figure frame
+    else
+        pause(10/length(X))
+    end
 
-    writeVideo(MOVE,getframe(gcf)); % Get a snapshot of the active figure frame
-    % End of main time loop
+        % End of main time loop
 end
 hold off
-close(MOVE); % Close and save the avi-file
+if record
+    close(MOVE); % Close and save the avi-file
+end
+
 end
 

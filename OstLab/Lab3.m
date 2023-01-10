@@ -14,32 +14,34 @@ Nc = 8; % Number of columns of the 2D object.
 Nr = 4; % Rows of columns of the 2D object.
 masses = 1; % All particles have mass 1.
 ks = 100;
-kd = 5;
-g = 10;
+kd = 0;
+g = 1;
 dt = 2e-3;
 L = 1; % Evenly distributed particles => sqrt(2) on diagonal.
 n_dims = 2;
 N_circles = 16; % Number of circles that make up the floor
 dist_circle = 0.1; % [0<->1] describing how large portion of radius to seperate.
 % --------------------------------------
+visualize=0;
+record = 0;
+name = "Video/Lab3/Lab3GridSprings";
+
 r_circle = L; % Randius of the circles which constructs the surface
 start_x = 0;
-start_y = r_circle*2;
-vx_init = 0.5;
+start_y = r_circle;
+vx_init = 7;
 vy_init = 0;
 NP = Nc*Nr; % Total number of particles in the spring grid.
 % Time step set-up.
-T = 4;
+T = 2;
 t_steps = T/dt;
 ts = 0:dt:T-dt;
+
 
 % ------- Set up the 2D object --------
 % The object is denoted by the matrix X
 x = meshgrid(0:L:(Nc-1)/L,0:L:(Nr-1)/L)+start_x;
-% y = meshgrid(0:L:(Nr-1)/L,0:L:(Nc-1)/L)';
 y = flip(meshgrid(0:L:(Nr-1)/L,0:L:(Nc-1)/L)',1)+start_y;
-% size(x')
-% size(y')
 X_init = cat(3,x',y');
 X_init = reshape(X_init,[NP n_dims]); % Flatten the matrix.
 % X now has Shape (NP x n_dims)
@@ -57,7 +59,6 @@ V_init(:,2)=vy_init;
 % Which we can use as a mask to remove the forces from non connected
 % particles.
 [A,diagonals] = GridAdjacencyMatrix(Nr,Nc);
-% A = sparse(A);
 % 'A' is the adjacency matrix, diagonals are only the diagonal springs.
 % 
 
@@ -90,25 +91,27 @@ circle_surface = BuildSurface(N_circles,r_circle,dist_circle,n_dims);
 F = @(X,V) ForceFunction(X,V,ms,g,ks_springs,kd_springs,L_springs);
 [X,V] = LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt);
 %timeit(@() LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt));
-
-figure(1)
-VisualizeSpringSystemWithSurface(X,A,circle_surface)% close
-% disp("Saved to 'ExampleVideo.avi'")
+if visualize
+    figure(1)
+    VisualizeSpringSystemWithSurface(X,A,circle_surface,record,name)% close
+end
 figure(2)
 [E,Ek,Es,Ep] = EnergyCalculation(X,V,ms,g,ks_springs,L_springs);
 PlotEnergies(E,Ek,Es,Ep,ts,kd)
 figure(3);
 % Track center of mass.
-center_mass_pos = squeeze(sum(X.*ms',2));
 center_mass_vel = squeeze(sum(V.*ms',2))./sum(ms);
 plot(ts,center_mass_vel(:,1))
 grid on
 title("Vx center of mass")
-figure(4)
-plot(ts,center_mass_pos(:,1))
-grid on
-title("X center of mass")
-
+vx_diff = center_mass_vel(1,1)-center_mass_vel(end,1);
+% Average acceleration is therefore:
+ax_ave = vx_diff/T;
+% f_mu = f_x =ma_x=mu*mg*cos(theta), theta=0. =>
+mu = ax_ave/g
+% v = 3 =>0.18
+% v = 5 =>0.19
+% v = 7 =>0.17
 function F_mat = ForceFunction(X,V,ms,g,ks,kd,L)
     % This is the force function of the current lab exercise.
     %

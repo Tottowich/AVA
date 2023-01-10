@@ -4,3 +4,4 @@ package.json
 *.asv
 *.mat
 COMSOL/LabB/exercise1/exercise4.mph
+*.DS_Store

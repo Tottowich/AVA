@@ -42,15 +42,18 @@ x3 = [0 1]; % REMOVE
 masses = [1; 1]; % The masses of particle 1 and two
 L = 1; % Spring rest length.
 ks = 10; % Spring constant.
-kd = 1; % Damping coefficient.w
+kd = 0.0; % Damping coefficient.w
 g = 0; % NO GRAVITY.
 % The particles are released from rest, i.e:
 v = 5;
 v1 = [0 -v];
 v2 = [0 v];
-v3 = [0 0]; % REMOVE
+T = 4;
+dt = 1e-3;
 % ---------------
-
+visualize = 0;
+record = 1;
+name = "Video/Lab2Damping";
 % Using the given values we can used the same methodology as in exercise 1.
 % However the problem is that we must construct an accurate force function
 % (recall F(X,V))
@@ -58,8 +61,7 @@ v3 = [0 0]; % REMOVE
 % As described in the theory above we can use the function
 %      F(i,j) = -ks(abs(r(i,j))-L)*r_bar, Must be a vector!
 % Note: r(i,j) is the distance between particle i and particle j
-T = 10;
-dt = 0.001;
+
 t_steps = ceil(T/dt);
 M = diag(masses);
 X_init = [x1;x2];
@@ -68,19 +70,23 @@ F = @(X,V) ForceFunction(X,V,ks,kd,L); % Anonymous function for LeapFrog
 [X,V] = LeapFrog(X_init,V_init,F,M,t_steps,dt);
 %timeit(@() LeapFrog(X_init,V_init,F,M,t_steps,dt))
 % a) Visualize the trajectory of the system.
-%VisualizeSpringSystem(X,ones(2))
+%
+if visualize
+    figure(1)
+    VisualizeSpringSystem(X,[0 1;1 0],record,name)
+end
 % b) Calculate the energies.
 [E,Ek,Es,Ep] = EnergyCalculation(X,V,masses,g,ks,L);
 
 ts = linspace(0,T,t_steps);
 % Plot energies over time.
-figure(1);
+figure(2);
 PlotEnergies(E,Ek,Es,Ep,ts,kd)
 % Calculate the difference in energy per occilation.
 %E_diff = max(E)-min(E);
 %fprintf("\nUsing %.4f results in maximum \nrelative differenceo of %.3f %%\n",dt,E_diff/max(E)*100)
 % Plot displacement of the particles
-figure(2)
+figure(3)
 subplot(2,2,[1 2])
 plot(ts,X(:,:,1))
 xlabel("Time ( s )")
@@ -100,15 +106,21 @@ hold off
 R = X - permute(X, [1 4 3 2]); % Relative positions, how long are the springs.
 rs = vecnorm(R,2,3); % The magnitude of each spring.
 spring_length = rs(:,1,2); % The spring. as seen from (1)<->(2)
-amps = spring_length-L; % The amplitudes represent the strech of the spring.
+amps = abs(spring_length-L); % The amplitudes represent the strech of the spring.
 % Plot the length of the spring over time.
-figure(3);
-plot(ts,spring_length)
+figure(4);
+plot(ts,amps)
 grid on;
-title("Length of spring between particle (1) and  (2)")
+title("Stretch over time")
 xlabel("Time (s)")
 ylabel("Length (m)")
-if v==0
+hold on
+% Analytical solution to the problem is as follows
+r_analytical = @(t) exp(-0.5*t).*(0.8*cos(sqrt(19.75)*t)+0.00907*sin(sqrt(19.75)));
+plot(ts,abs(r_analytical(ts)))
+legend(["Simulated","Analytical"],Location="best")
+hold off%%
+if kd>0
     % Find first peak which does not exceed 10% of the initial amplitude.
     [amp_peaks,amp_ids] = findpeaks(amps);
     amp_times = amp_ids*dt;
@@ -121,24 +133,27 @@ if v==0
     fprintf("ks = %.3f\n",ks);
     fprintf("Time to reach = %.3f\n",amp_times(id_amp));
 end
-% d) Calculate the angular momentum
-ang_mom = AngularMomentum(X,V,masses);
-% We estimate the spring system as two point masses.
-% Find the moment of inertia at each time step.
-% Since we have equal masses we know that the axis of rotation is in the
-% middle of the spring. Resulting in two dual
-I = sum((spring_length/2).^2.*masses',2);
-ang_freq = ang_mom./I;
-% Plotting the angular momentum vs spring length
-plot(ts,ang_freq,DisplayName="Angular Frequency")
-hold on;
-plot(ts,spring_length,DisplayName="Spring Length")
-grid on;
-legend(Location="best")
-title("Angular frequency and spring length")
-xlabel("Time (s)")
-ylabel("rad/s & m")
-hold off;
+if abs(v)>0
+    % d) Calculate the angular momentum
+    ang_mom = AngularMomentum(X,V,masses);
+    % We estimate the spring system as two point masses.
+    % Find the moment of inertia at each time step.
+    % Since we have equal masses we know that the axis of rotation is in the
+    % middle of the spring. Resulting in two dual
+    I = sum((spring_length/2).^2.*masses',2);
+    ang_freq = ang_mom./I;
+    % Plotting the angular momentum vs spring length
+    figure(4)
+    plot(ts,ang_freq,DisplayName="Angular Frequency")
+    hold on;
+    plot(ts,spring_length,DisplayName="Spring Length")
+    grid on;
+    legend(Location="best")
+    title("Angular frequency and spring length")
+    xlabel("Time (s)")
+    ylabel("rad/s & m")
+    hold off;
+end
 
 
 function F_mat = ForceFunction(X,V,ks,kd,L)

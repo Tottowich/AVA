@@ -1,4 +1,4 @@
-function  VisualizeSpringSystemWithSurface(X,A,circle_surface)
+function  VisualizeSpringSystemWithSurface(X,A,circle_surface,record,name)
 %VISUALIZECHEESE Visualize the simulated spring system'cheese'
 %   Function used to animated the system of springs.
 %
@@ -12,15 +12,19 @@ function  VisualizeSpringSystemWithSurface(X,A,circle_surface)
 %
 %   circle_surface - (mat) Matrix of shape (N x n_dims+1). For each circle
 %                          there is center (x,y,z) + radius.
+%   record - (bool) 0 if not record.
 %
-[t_steps,NP,n_dims] = size(X);
+%   name - (string) Name of recording
 % Initialize animation file before main loop
+[t_steps,NP,n_dims] = size(X);
 set(gcf,'Position',get(0,'Screensize')); % Maximize the window for quality
-MOVE = VideoWriter('ExampleVideo.avi'); % Create an video struct, "MOVE.",
-% with the output file ExampleVideo.avi
-MOVE.Quality = 100; % Set the quality (0-100)
-MOVE.FrameRate = 25; % Set frames per seond to PAL standard (animation speed)
-open(MOVE);
+if record
+    MOVE = VideoWriter(name+".avi"); % Create an video struct, "MOVE.",
+    % with the output file ExampleVideo.avi
+    MOVE.Quality = 60; % Set the quality (0-100)
+    MOVE.FrameRate = 25; % Set frames per seond to PAL standard (animation speed)
+    open(MOVE);
+end
 set(gca,'nextplot','replacechildren');
 % Set the limits to avoid window stuttering.
 minminx = min(X(:,:,1),[],'all');
@@ -54,16 +58,22 @@ for n = 1:N_cirlces
 end
 % Begin main time loop
 figure(1)
-for t = 2:10:size(X,1)
+for t = 2:size(X,1)
     x = squeeze(X(t,:,1));
     y = squeeze(X(t,:,2));
     % Update the grid.
     set(SPRINGS,'XData',x,'YData',y)
-
-    writeVideo(MOVE,getframe(gcf)); % Get a snapshot of the active figure frame
-    % End of main time loop
+    if record
+        writeVideo(MOVE,getframe(gcf)); % Get a snapshot of the active figure frame
+    else
+        pause(0.01)
+    end
+        % End of main time loop
 end
 hold off
-close(MOVE); % Close and save the avi-file
+if record
+    close(MOVE); % Close and save the avi-file
+end
+
 end
 
