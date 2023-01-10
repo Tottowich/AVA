@@ -60,17 +60,18 @@
 % x(inter_particles,:) = x_new;
 % % X(t,:,:) = x;
 % PlotFrame(t,X,A,circle_surface)
-[X,Y,Z] = sphere(100,2);
-surf(X,Y,Z,'EdgeColor','k','FaceColor','w','FaceAlpha',0.5)
-A = randi([0,1],[10,10]);
-A = A+A';
-xs = rand([10,3]);
-hold on
-plot(graph(A),'XData',xs(:,1),'YData',xs(:,2),'ZData',xs(:,3))
-axis equal
-hold off
+% [X,Y,Z] = sphere(100,2);
+% surf(X,Y,Z,'EdgeColor','k','FaceColor','w','FaceAlpha',0.5)
+% A = randi([0,1],[10,10]);
+% A = A+A';
+% xs = rand([10,3]);
+% hold on
+% plot(graph(A),'XData',xs(:,1),'YData',xs(:,2),'ZData',xs(:,3))
+% axis equal
+% hold off
 % timeit(@() test(x,v,circle_surface))
-
+% [X,Y,Z] = sphere(100,2);
+% s = surf(X,Y,Z,'EdgeColor','k','FaceColor','w','FaceAlpha',0.5)
 
 function test(x,v,circle_surface)
 n_dims = 2;
