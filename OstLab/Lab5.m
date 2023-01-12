@@ -26,7 +26,7 @@ dist_circle = 0.1; % [0<->1] describing how large portion of radius to seperate.
 r_circle = L; % Randius of the circles which constructs the surface
 v_init = [3,0,0];
 % --------------------------------------
-visualize = 0;
+visualize = 1;
 record = 0;
 name = "Video/Lab5/Lab5MultiDim";
 

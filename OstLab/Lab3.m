@@ -22,7 +22,7 @@ n_dims = 2;
 N_circles = 16; % Number of circles that make up the floor
 dist_circle = 0.1; % [0<->1] describing how large portion of radius to seperate.
 % --------------------------------------
-visualize=0;
+visualize=1;
 record = 0;
 name = "Video/Lab3/Lab3GridSprings";
 
@@ -69,6 +69,7 @@ V_init(:,2)=vy_init;
 %                     spring resting length
 L_springs = zeros(NP,1,NP);
 L_springs(A==1) = L; % Set every connection to L
+
 % But diagonals are longer!
 L_springs(diagonals==1) = sqrt(2)*L;
 
@@ -81,7 +82,7 @@ kd_springs(A==1) = kd;
 
 % Masses of the particles.
 ms = ones(NP,1)*masses; % All particles have the same mass.
-M = diag(ms);
+M = diag(ms); % Diagonal matrix.
 
 % Create the floor
 circle_surface = BuildSurface(N_circles,r_circle,dist_circle,n_dims);
@@ -98,8 +99,9 @@ end
 figure(2)
 [E,Ek,Es,Ep] = EnergyCalculation(X,V,ms,g,ks_springs,L_springs);
 PlotEnergies(E,Ek,Es,Ep,ts,kd)
-figure(3);
+
 % Track center of mass.
+figure(3);
 center_mass_vel = squeeze(sum(V.*ms',2))./sum(ms);
 plot(ts,center_mass_vel(:,1))
 grid on
@@ -108,7 +110,8 @@ vx_diff = center_mass_vel(1,1)-center_mass_vel(end,1);
 % Average acceleration is therefore:
 ax_ave = vx_diff/T;
 % f_mu = f_x =ma_x=mu*mg*cos(theta), theta=0. =>
-mu = ax_ave/g
+mu = ax_ave/g;
+fprintf("\nFriction coefficient using initial x-velocity %.2f: mu = %.3f \n",vx_init,mu)
 % v = 3 =>0.18
 % v = 5 =>0.19
 % v = 7 =>0.17

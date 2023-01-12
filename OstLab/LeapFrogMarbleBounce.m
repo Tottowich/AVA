@@ -63,14 +63,16 @@ function [X,X_marble,V,V_marble] = LeapFrogMarbleBounce(X_init,V_init,X_marble_i
     radii = X_marble_init(:,end); % Shape: (NM x 1)
     M_mat = diag(M);
     M_marble_mat = diag(M_marble);
+    M_inv = inv(M_mat); % Compute inverse of diagonal mass matrix, i.e. 1./M.
+    M_marble_inv = inv(M_marble_mat);
+    
     F = @(x_net,v_net,x_marble,v_marble) ForceFunction(x_net,v_net,x_marble,v_marble,M,M_marble,g,ks,kd,L);
     X(1,:,:) = X_init; % Set initial position of the net.
     [F_net,F_marble] = F(X_init,V_init,X_marble_init,V_marble_init); % Initial force.
-    v_net = V_init-F_net*dt/2; % Initialize with half Euler step.
-    v_marble = V_marble_init - F_marble*dt/2;
+    v_net = V_init-M_inv*F_net*dt/2; % Initialize with half Euler step.
+    v_marble = V_marble_init - M_marble_inv*F_marble*dt/2;
     v_net(fixed) = 0;
-    M_inv = inv(M_mat); % Compute inverse of diagonal mass matrix, i.e. 1./M.
-    M_marble_inv = inv(M_marble_mat);
+
     for n = 1:t_steps-1
         xs = squeeze(X(n,:,:)); % Remove singleton dimension.
         xs_marble = squeeze(X_marble(n,:,1:end-1));
@@ -143,36 +145,61 @@ function [X,X_marble,V,V_marble] = LeapFrogMarbleBounce(X_init,V_init,X_marble_i
         [inter_nodes,id] = unique(inter_nodes,'first');
         inter_marbles = inter_marbles(id);
         n_hat = zeros(length(id),n_dims);
+        v_net_new = v_net+dt*M_inv*F_net; % Calculate the next v(n+1/2).
+        v_net_new(inter_nodes,:) = 0;
+        v_marble_new = v_marble + dt*M_marble_inv*F_marble;
+        v_marble_new(inter_marbles,:) = 0;
         for i = 1:length(id) % Could not find pairwise indexing for multidimensional array
             n_hat(i,:) = r_bars(inter_marbles(i),:,inter_nodes(i));
+            m_marble = M_marble(inter_marbles(i));
+            m_node = M(inter_nodes(i));
 %             keyboard
-            F_marble(inter_marbles(i),:) = F_marble(inter_marbles(i),:) + dot(F_net(inter_nodes(i),:),n_hat(i,:),2).*n_hat(i,:);
-            F_net(inter_nodes(i),:) = F_marble(inter_marbles(i),:)-dot(F_net(inter_nodes(i),:),n_hat(i,:),2).*n_hat(i,:);
+            %F_marble(inter_marbles(i),:) = F_marble(inter_marbles(i),:) + dot(F_net(inter_nodes(i),:),n_hat(i,:),2).*n_hat(i,:);
+            %F_net(inter_nodes(i),:) = F_marble(inter_marbles(i),:)-dot(F_net(inter_nodes(i),:),n_hat(i,:),2).*n_hat(i,:);
+            v_marble_new(inter_marbles(i),:) = (m_marble-m_node)/(m_marble+m_node)*v_marble(inter_marbles(i),:)+...
+                                               (2*m_node)/(m_marble+m_node)*v_net(inter_nodes(i),:);
+            v_net_new(inter_nodes(i),:) = 2*m_marble/(m_marble+m_node)*v_marble(inter_marbles(i),:)+...
+                                          (m_node-m_marble)/(m_marble+m_node)*v_net(inter_nodes(i),:);
         end
   
 
-        v_net = v_net+dt*M_inv*F_net; % Calculate the next v(n+1/2).
+        %v_net = v_net+dt*M_inv*F_net; % Calculate the next v(n+1/2).
 %         keyboard
-        v_marble_new = v_marble + dt*M_marble_inv*F_marble;
+        %v_marble_new = v_marble + dt*M_marble_inv*F_marble;
         x_marble_new = xs_marble+dt*v_marble_new;
-        xs(inter_nodes,:) = x_marble_new(inter_marbles,:)+(radii+eps(radii))*n_hat;
-        x_new=xs+dt*v_net;
-%         if ~isempty(inter_marbles) && length(inter_nodes)>2
-%             % Each node can only collide with one marble at a time for
-%             % simplicity.
-%             disp("Marble: "+inter_marbles)
-%             disp("Node: "+inter_nodes)
-%             keyboard
-%         end
+        if ~isempty(inter_nodes)% && length(unique(inter_marbles))>1
+           pos_diff = squeeze(pos_diff);
+           if NM==1
+               pos_diff = pos_diff';
+           end
+           inds = sub2ind(size(pos_diff),inter_marbles,inter_nodes);
+           %if length(inter_marbles)>2
+              %Each node can only collide with one marble at a time for
+              %simplicity.
+            %  disp("Marble: "+inter_marbles)
+           %   disp("Node: "+inter_nodes)
+           %   keyboard
+           %end
+           xs(inter_nodes,:) = xs(inter_nodes,:)+2*(radii(inter_marbles)-pos_diff(inds)).*n_hat;
+        end
+        x_new=xs+dt*v_net_new;
+        
+        %if ~isempty(inter_marbles) && length(inter_marbles)>1
+            %Each node can only collide with one marble at a time for
+            %simplicity.
+        %    disp("Marble: "+inter_marbles)
+        %    disp("Node: "+inter_nodes)
+        %end
 %         x_marble_new(inter_marbles) = 
         
         X(n+1,:,:) = x_new;
         X(n+1,fixed,:) = X_fixed; % The edges should be still
-        V(n+1,:,:) = v_net;
+        V(n+1,:,:) = v_net_new;
         V(n+1,fixed,:) = 0;
         X_marble(n+1,:,1:end-1) = x_marble_new;
         V_marble(n+1,:,:) = v_marble_new;
         v_marble = v_marble_new;
+        v_net = v_net_new;
 %         n_hats{n+1} = n_hat;
     end
 end

@@ -1,5 +1,5 @@
 function  VisualizeSpringSystemWithSurface(X,A,circle_surface,record,name)
-%VISUALIZECHEESE Visualize the simulated spring system'cheese'
+%VISUALIZESPRINSYSTEMWITHSURFACE Visualize the simulated spring system.
 %   Function used to animated the system of springs.
 %
 % Author: Theodor Jonsson
@@ -15,6 +15,8 @@ function  VisualizeSpringSystemWithSurface(X,A,circle_surface,record,name)
 %   record - (bool) 0 if not record.
 %
 %   name - (string) Name of recording
+%
+
 % Initialize animation file before main loop
 [t_steps,NP,n_dims] = size(X);
 set(gcf,'Position',get(0,'Screensize')); % Maximize the window for quality

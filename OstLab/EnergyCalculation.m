@@ -38,6 +38,8 @@ function [E,Ek,Es,Ep] = EnergyCalculation(X,V,ms,g,ks,L)
 %   Es - (mat) Total potential energy of the system at each time step.
 %              Shape: (t_steps x 1)
 %
+
+
 [t_steps,NP,n_dims] = size(X);
 % SPRING
 % Create a distance tensor of shape (t_steps x NP x n_dims x NP)
@@ -58,13 +60,15 @@ end
 % Divide by two when summing all the springs since it is a symmetric
 % matrix.
 Es = sum(spring_energies,[2,3])/2;
+
+
 % KINETIC
 vs = vecnorm(V,2,3); % Magnitude of velocity of each particle.
 % vs now have the shape (t_steps x NP)
 Ek = vs.^2*ms/2; % (t_steps x NP)x(NP x 1) -> (t_steps x 1)
 
-% POTENTIAL
 
+% POTENTIAL
 h = X(:,:,2*(2==n_dims)+3*(3==n_dims)); % (t_steps x NP)
 
 Ep = g*h*ms; % (t_steps x NP)x(NP x 1) -> (t_steps x 1)

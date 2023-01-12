@@ -47,6 +47,7 @@ A = diag(horizontal, 1)+...            % Add the diagonals to a zero matrix
     diag(tl_to_br, Nc-1);
 %A = A-diag(horizontal,1);
 A = A+A.'; % This makes the Adjacency matrix symmetric.
+% Also return the diagonals to make the diagonal springs longer.
 diagonals = diag(tl_to_br, Nc-1)+diag(bl_to_tr, Nc+1);
 diagonals = diagonals+diagonals';
 end
