@@ -91,7 +91,7 @@ circle_surface = BuildSurface(N_circles,r_circle,dist_circle,n_dims);
 % F = @(X,V) ForceFunction(X,V,A,ms,g,ks_springs,kd_springs,L_springs);
 F = @(X,V) ForceFunction(X,V,ms,g,ks_springs,kd_springs,L_springs);
 [X,V] = LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt);
-% timeit(@() LeapFrog(X_init,V_init,F,M,t_steps,dt))
+timeit(@() LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt))
 
 if visualize
     figure(1)

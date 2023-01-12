@@ -70,6 +70,11 @@ function [X,V] = LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_ste
         [inter_circles,inter_particles] = find(inter==1);
         % Only intersect with one circle. Using small dt should eliminate this
         % issue but for robustness select first cirle from left to right.
+%         if ~isempty(inter_circles)
+%             disp("Circles: "+inter_circles)
+%             disp("Particles: "+inter_particles)
+%             keyboard
+%         end
         [inter_particles,id] = unique(inter_particles,'first');
         inter_circles = inter_circles(id);
         % Unfortunatly I could only resort to a loop for this part...
