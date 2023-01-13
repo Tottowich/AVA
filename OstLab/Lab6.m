@@ -10,35 +10,36 @@
 clear
 close all
 % ------- GIVEN PROPERTIES -------
-Nx = 30; % Number of nodes in x-y-z net.
-Ny = 30; % 
+Nx = 20; % Number of nodes in x-y-z net.
+Ny = 20; % 
 Nz = 1; % 
-masses = 0.005; % Masses of the nodes not on the edge of the net.
-ks = 40;
-kd = 0.0;
-g = 4;
-dt = 2e-3;
+masses = 0.01; % Masses of the nodes not on the edge of the net.
+ks = 400;
+kd = 0.1;
+g = 10;
+dt = 1e-3;
 n_dims = 3;
 % Marble.
-r_marble = 1; % Radius of the marble.
-L = r_marble; % Evenly distributed particles => sqrt(2) on diagonal.
-NM = 10;
-M_marble = 0.05+(0.1-0.05)*rand(NM,1);
+r_marble_max = 1; % Radius of the marble.
+density_max = 3;
+L = r_marble_max/3; % Evenly distributed particles => sqrt(2) on diagonal.
+NM = 5;
+density = 0.2+(density_max-0.2)*rand(NM,1);
+r_marble = max(r_marble_max*rand(NM,1),L); % Randomize some
+M_marble = pi*r_marble.^3 .*density/3;
+disp("M_marbles: "+M_marble)
 
-x_marble = 2*(Nx-1)*L/3;
-y_marble = 2*(Ny-1)*L/3;
-z_marble = 1.2*r_marble;
 % --------------------------------------
 visualize = 1;
-record = 0;
-name = "Video/Lab6/Lab6Marble";
+record = 1;
+name = "Video/Lab6/Lab6Marble4";
 
 start_x = 0;
 start_y = 0;
 start_z = 0;
 NP = Nx*Ny*Nz; % Total number of particles in the spring grid.
 % Time step set-up.
-T = 20;
+T = 4;
 t_steps = T/dt;
 ts = 0:dt:T-dt;
 
@@ -53,7 +54,7 @@ X_init = cat(4,xs,ys,zs);
 X_init = reshape(X_init,[NP n_dims]); % Flatten the matrix.
 
 % Initialize the marble position and velocity
-X_marble_init = [max(x),max(y),0].*rand(NM,3);
+X_marble_init = L+[max(x)-2*L,max(y)-2*L,0].*rand(NM,3);
 X_marble_init(:,4) = r_marble;%r_marble + r_marble*rand(NM,1);
 X_marble_init(:,3) = 2*r_marble;
 % X_init(:,3) = X_init(:,3)+start_z;
@@ -62,7 +63,6 @@ X_marble_init(:,3) = 2*r_marble;
 V_init = zeros(NP,n_dims);
 % Testing with some initial velocity
 V_marble_init = zeros(NM,n_dims);
-V_marble_init(:,1) = 0;
 %V_init = V_init+v_init;
 
 % -------------------------------------
@@ -121,7 +121,7 @@ springs.ks = ks_springs;
 springs.kd = kd_springs;
 % Masses of the particles.
 M = ones(NP,1)*masses; % All particles have the same mass.
-%%
+
 tic
 [X,X_marble,V,V_marble] = LeapFrogMarbleBounce(X_init,V_init,X_marble_init,V_marble_init,fixed,springs,M,M_marble,g,t_steps,dt);
 toc
@@ -132,7 +132,6 @@ toc
 %
 %
 %%
-X_marble(:,:,4) = r_marble;
 figure(1)
 if visualize
     VisualizeSpringMarble3D(X,A,X_marble,record,name)
@@ -140,7 +139,7 @@ end
 %%
 % disp("Saved to 'ExampleVideo.avi'")
 figure(2)
-[E,Ek,Es,Ep] = EnergyCalculation(X,V,masses,g,ks_springs,L_springs);
+[E,Ek,Es,Ep] = EnergyCalculation(X,V,M,g,ks_springs,L_springs);
 PlotEnergies(E,Ek,Es,Ep,ts,kd)
 figure(3);
 % Track center of mass.

@@ -60,6 +60,7 @@ function [X,X_marble,V,V_marble] = LeapFrogMarbleBounce(X_init,V_init,X_marble_i
     V_marble(1,:,:) = V_marble_init;
     % Get the position and radii of the marbles
     X_marble(1,:,:) = X_marble_init;
+    X_marble(:,:,end) = repmat(X_marble_init(:,end)',t_steps,1);
     radii = X_marble_init(:,end); % Shape: (NM x 1)
     M_mat = diag(M);
     M_marble_mat = diag(M_marble);
@@ -71,7 +72,7 @@ function [X,X_marble,V,V_marble] = LeapFrogMarbleBounce(X_init,V_init,X_marble_i
     [F_net,F_marble] = F(X_init,V_init,X_marble_init,V_marble_init); % Initial force.
     v_net = V_init-M_inv*F_net*dt/2; % Initialize with half Euler step.
     v_marble = V_marble_init - M_marble_inv*F_marble*dt/2;
-    v_net(fixed) = 0;
+    v_net(fixed,:) = 0;
 
     for n = 1:t_steps-1
         xs = squeeze(X(n,:,:)); % Remove singleton dimension.
@@ -81,58 +82,6 @@ function [X,X_marble,V,V_marble] = LeapFrogMarbleBounce(X_init,V_init,X_marble_i
         end
         [F_net,F_marble] = F(xs,v_net,xs_marble,v_marble); % Calculate the force matricies.
         % These matricies are standalone from each other.
-        % (Assuming no interaction)
-        % ########
-        % We now have the forces acting on each particle system.
-        % Except for collision forces.
-        % We use the fact that 
-        
-        % We must now compute the forces between the bouncing marble and the
-        % net.
-%         marble_pos = X_marble(:,1:end-1);
-%         radii = X_marble(:,end);
-%         r = -(marble_pos - permute(X, [3 2 1])); % Shape (N_
-%         pos_diff = vecnorm(r,2,2);
-%         r_bars = r./pos_diff;
-%         inter = squeeze(pos_diff)<=radii; % Logical intersection matrix.
-% %         [inter_circles,inter_particles] = find(inter==1);
-% %         [inter_particles,id] = unique(inter_particles,'first');
-%         [inter_marble,inter_nodes] = find(inter==1);
-%         [inter_nodes,id] = unique(inter_nodes,'first');
-%         % This has only taken into account the spring system.
-%         inter_marble = inter_marble(id);
-%         for i = 1:length(id) % Could not find pairwise indexing for multidimensional array
-%             n_hat(i,:) = r_bars(inter_marble(i),:,inter_nodes(i));
-%         end
-%         v_col_marble = v_marble(inter_marble,:); % Velocity of the colliding marbles.
-%         v_col_nodes = v_net(inter_nodes,:);
-%         % Compute the force during the impulse.
-%         % Since we know that momentum is conserved then.
-%         % ########
-%         v_net = v_net+dt*M_inv*F_mat; % Calculate the next v(n+1/2).
-%         x_new=xs+dt*v_net;
-%         % Check if collision before proceeding.
-%         r = -(pos_marble - permute(x_new, [3 2 1]));
-%         pos_diff = vecnorm(r,2,2);
-%         r_bars = r./pos_diff;
-%         % pos_diff has Shape: (NP x N_circles)
-%         % Check which particles are intersecting
-%         inter = squeeze(pos_diff)<=radii;
-%         [inter_circles,inter_particles] = find(inter==1);
-%         % Only intersect with one circle. Using small dt should eliminate this
-%         % issue but for robustness select first cirle from left to right.
-%         [inter_particles,id] = unique(inter_particles,'first');
-%         inter_circles = inter_circles(id);
-%         % Unfortunatly I could only resort to a loop for this part...
-%         n_hat = zeros(length(id),n_dims);
-%         bounce = zeros(length(id),1);
-%         for i = 1:length(id) % Could not find pairwise indexing for multidimensional array
-%             n_hat(i,:) = r_bars(inter_circles(i),:,inter_particles(i));
-%             bounce(i) = 2*(radii(inter_circles(i))-pos_diff(inter_circles(i),:,inter_particles(i)));
-%         end
-%         v_par = dot(v_net(inter_particles,:),n_hat,2).*n_hat;
-%         v_net(inter_particles,:) = v(inter_particles,:)-2*v_par;
-%         x_new(inter_particles,:) = x_new(inter_particles,:)+bounce.*n_hat;
         % Check if in contact with the net.
         r = -(xs_marble - permute(xs, [3 2 1]));
         pos_diff = vecnorm(r,2,2);
@@ -147,40 +96,30 @@ function [X,X_marble,V,V_marble] = LeapFrogMarbleBounce(X_init,V_init,X_marble_i
         n_hat = zeros(length(id),n_dims);
         v_net_new = v_net+dt*M_inv*F_net; % Calculate the next v(n+1/2).
         v_net_new(inter_nodes,:) = 0;
+        v_net_new(fixed,:)=0;
         v_marble_new = v_marble + dt*M_marble_inv*F_marble;
         v_marble_new(inter_marbles,:) = 0;
         for i = 1:length(id) % Could not find pairwise indexing for multidimensional array
             n_hat(i,:) = r_bars(inter_marbles(i),:,inter_nodes(i));
             m_marble = M_marble(inter_marbles(i));
             m_node = M(inter_nodes(i));
-%             keyboard
-            %F_marble(inter_marbles(i),:) = F_marble(inter_marbles(i),:) + dot(F_net(inter_nodes(i),:),n_hat(i,:),2).*n_hat(i,:);
-            %F_net(inter_nodes(i),:) = F_marble(inter_marbles(i),:)-dot(F_net(inter_nodes(i),:),n_hat(i,:),2).*n_hat(i,:);
             v_marble_new(inter_marbles(i),:) = (m_marble-m_node)/(m_marble+m_node)*v_marble(inter_marbles(i),:)+...
                                                (2*m_node)/(m_marble+m_node)*v_net(inter_nodes(i),:);
-            v_net_new(inter_nodes(i),:) = 2*m_marble/(m_marble+m_node)*v_marble(inter_marbles(i),:)+...
+            v_net_new(inter_nodes(i),:) = v_net_new(inter_nodes(i),:)+2*m_marble/(m_marble+m_node)*v_marble(inter_marbles(i),:)+...
                                           (m_node-m_marble)/(m_marble+m_node)*v_net(inter_nodes(i),:);
         end
-  
-
-        %v_net = v_net+dt*M_inv*F_net; % Calculate the next v(n+1/2).
-%         keyboard
-        %v_marble_new = v_marble + dt*M_marble_inv*F_marble;
         x_marble_new = xs_marble+dt*v_marble_new;
         if ~isempty(inter_nodes)% && length(unique(inter_marbles))>1
-           pos_diff = squeeze(pos_diff);
-           if NM==1
-               pos_diff = pos_diff';
-           end
-           inds = sub2ind(size(pos_diff),inter_marbles,inter_nodes);
-           %if length(inter_marbles)>2
-              %Each node can only collide with one marble at a time for
-              %simplicity.
-            %  disp("Marble: "+inter_marbles)
-           %   disp("Node: "+inter_nodes)
-           %   keyboard
-           %end
-           xs(inter_nodes,:) = xs(inter_nodes,:)+2*(radii(inter_marbles)-pos_diff(inds)).*n_hat;
+            pos_diff = squeeze(pos_diff);
+            if NM==1
+                pos_diff = pos_diff';
+            end
+            inds = sub2ind(size(pos_diff),inter_marbles,inter_nodes);
+            if NM~=1
+                xs(inter_nodes,:) = xs(inter_nodes,:)+2*(radii(inter_marbles)-pos_diff(inds)).*n_hat;
+            else
+                xs(inter_nodes,:) = xs(inter_nodes,:)+2*(radii(inter_marbles)-pos_diff(inds))'.*n_hat;
+            end
         end
         x_new=xs+dt*v_net_new;
         
