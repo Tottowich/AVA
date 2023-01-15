@@ -73,7 +73,8 @@ function [X,X_marble,V,V_marble] = LeapFrogMarbleBounce(X_init,V_init,X_marble_i
     v_net = V_init-M_inv*F_net*dt/2; % Initialize with half Euler step.
     v_marble = V_marble_init - M_marble_inv*F_marble*dt/2;
     v_net(fixed,:) = 0;
-
+    min_dist_marbles = radii+radii';
+    min_dist_marbles(eye(NM)==1) = NaN;
     for n = 1:t_steps-1
         xs = squeeze(X(n,:,:)); % Remove singleton dimension.
         xs_marble = squeeze(X_marble(n,:,1:end-1));
@@ -82,7 +83,37 @@ function [X,X_marble,V,V_marble] = LeapFrogMarbleBounce(X_init,V_init,X_marble_i
         end
         [F_net,F_marble] = F(xs,v_net,xs_marble,v_marble); % Calculate the force matricies.
         % These matricies are standalone from each other.
-        % Check if in contact with the net.
+        %%% MARBLE COLLISION
+        
+        r = -(xs_marble - permute(xs_marble, [3 2 1]));
+        pos_diff = vecnorm(r,2,2);
+        r_bars = r./pos_diff; % Shape - (NM x n_dims x NM), will be anti symmetric.
+        % Replace NaN with zeros. 
+        r_bars(isnan(r_bars))=0;
+        inter = squeeze(pos_diff)<=min_dist_marbles;
+        [inter_marbles_A,inter_marbles_B] = find(inter==1);
+        [inter_marbles_B,id] = unique(inter_marbles_B,'first');
+        if ~isempty(id)
+            inter_marbles_A = inter_marbles_A(id);
+            m_sum = sum(M_marble([inter_marbles_A;inter_marbles_B]))/2;
+            v_marble(inter_marbles_A,:) = (M_marble(inter_marbles_A)-M_marble(inter_marbles_B))./m_sum.*v_marble(inter_marbles_A,:)+...
+                                         2*M_marble(inter_marbles_B).*v_marble(inter_marbles_B,:)./m_sum;
+            v_marble(inter_marbles_B,:) = 2*M_marble(inter_marbles_A)./m_sum.*v_marble(inter_marbles_A,:)+...
+                                         (M_marble(inter_marbles_B)-M_marble(inter_marbles_A))./m_sum.*v_marble(inter_marbles_B,:);
+            xs_marble(inter_marbles_A,:) = xs_marble(inter_marbles_A,:)+v_marble(inter_marbles_A,:)*dt;
+            n_hat = zeros(length(id),n_dims);
+            for i = 1:length(id) % Could not find pairwise indexing for multidimensional array
+                n_hat(i,:) = r_bars(inter_marbles_A(i),:,inter_marbles_B(i));
+            end
+            pos_diff = squeeze(pos_diff);
+            inds = sub2ind(size(pos_diff),inter_marbles_A,inter_marbles_B);
+            xs_marble(inter_marbles_A,:) = xs_marble(inter_marbles_A,:)-(radii(inter_marbles_A)-pos_diff(inds)).*n_hat;
+            %keyboard
+        end
+        %%% END MARBLE COLLISION
+        
+        
+        %%% INTERSECTION FLOOR
         r = -(xs_marble - permute(xs, [3 2 1]));
         pos_diff = vecnorm(r,2,2);
         r_bars = r./pos_diff; % Shape (NM x n_dims x NP)
@@ -121,6 +152,7 @@ function [X,X_marble,V,V_marble] = LeapFrogMarbleBounce(X_init,V_init,X_marble_i
                 xs(inter_nodes,:) = xs(inter_nodes,:)+2*(radii(inter_marbles)-pos_diff(inds))'.*n_hat;
             end
         end
+        %%% END INTERSECTION FLOOR
         x_new=xs+dt*v_net_new;
         
         %if ~isempty(inter_marbles) && length(inter_marbles)>1
@@ -130,7 +162,6 @@ function [X,X_marble,V,V_marble] = LeapFrogMarbleBounce(X_init,V_init,X_marble_i
         %    disp("Node: "+inter_nodes)
         %end
 %         x_marble_new(inter_marbles) = 
-        
         X(n+1,:,:) = x_new;
         X(n+1,fixed,:) = X_fixed; % The edges should be still
         V(n+1,:,:) = v_net_new;
@@ -189,8 +220,8 @@ function [F_net,F_marble] = ForceFunction(X,V,X_marble,V_marble,ms,ms_marble,g,k
                            % shape (NP x 1 x NP) with different strengths
                            % for each spring.
     % DAMPING
-    F_damping = kd.*dot(V_rels,R,2)./rs;
-    F_damping(isnan(F_damping))=0;
+    F_damping = kd.*dot(V_rels,r_bars,2);
+    % F_damping(isnan(F_damping))=0;
     % Multiply with the unit vectors of each individual spring.
     F_tensor = -(F_spring+F_damping).*r_bars; % (NP x n_dims x NP)
     % The Entries F(i,:,i) should be zero since this corresponds to the
@@ -200,20 +231,27 @@ function [F_net,F_marble] = ForceFunction(X,V,X_marble,V_marble,ms,ms_marble,g,k
                              % contribution from each spring
     % F_mat now have the correct shape of (NP x n_dims)
     
-    % We must now compute the forces between the bouncing marble and the
-    % net.
-%     centers = X_marble(:,1:end-1);
-%     radii = X_marble(:,end);
-%     r = -(centers - permute(X, [3 2 1])); % Shape (N_
-%     pos_diff = vecnorm(r,2,2);
-%     r_bars = r./pos_diff;
-%     inter = squeeze(pos_diff)<=radii; % Logical intersection matrix.
-%     [inter_circles,inter_particles] = find(inter==1);
-%     [inter_particles,id] = unique(inter_particles,'first');
     % This has only taken into account the spring system.
     % Now add gravity!
     F_g = ms*g*[0 0 -1]; % (NPx1)x(1x3) => (NPx3)
     F_net = F_net+F_g;
     F_marble = ms_marble*g*[0 0 -1];
+
+    %if any(any(isnan(F_marble)))
+    %    disp("NaN marble found!")
+    %    keyboard
+    %end
+    %if any(any(isinf(F_marble)))
+    %    disp("Inf marble found!")
+    %    keyboard
+    %end
+    %if any(any(isnan(F_net)))
+    %    disp("NaN net found!")
+    %    keyboard
+    %end
+    %if any(any(isinf(F_net)))
+    %    disp("Inf net found!")
+    %    keyboard
+    %end
 end
 

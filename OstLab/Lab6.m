@@ -7,39 +7,38 @@
 % The force function will now be more complicated but it will probabily be
 % significantly faster and more general.
 %
+rng(6)
 clear
 close all
 % ------- GIVEN PROPERTIES -------
 Nx = 20; % Number of nodes in x-y-z net.
 Ny = 20; % 
-Nz = 1; % 
-masses = 0.01; % Masses of the nodes not on the edge of the net.
-ks = 400;
-kd = 0.1;
+Nz = 2; % 
+masses = 1; % Masses of the nodes not on the edge of the net.
+ks = 500;
+kd = 10;
 g = 10;
-dt = 1e-3;
+dt = 2e-3;
 n_dims = 3;
-% Marble.
-r_marble_max = 1; % Radius of the marble.
-density_max = 3;
-L = r_marble_max/3; % Evenly distributed particles => sqrt(2) on diagonal.
-NM = 5;
-density = 0.2+(density_max-0.2)*rand(NM,1);
+% Marble properties.
+r_marble_max = 4; % Radius of the marble.
+density_max = 50;
+L = r_marble_max/4; % Evenly distributed particles => sqrt(2) on diagonal.
+NM = 4;
+density = density_max*rand(NM,1);
 r_marble = max(r_marble_max*rand(NM,1),L); % Randomize some
-M_marble = pi*r_marble.^3 .*density/3;
-disp("M_marbles: "+M_marble)
-
+M_marble = pi*r_marble.^3.*density_max/300;
 % --------------------------------------
 visualize = 1;
-record = 1;
-name = "Video/Lab6/Lab6Marble4";
+record = 0;
+name = "Video/Lab6/Lab6MarbleCollisions";
 
 start_x = 0;
 start_y = 0;
 start_z = 0;
 NP = Nx*Ny*Nz; % Total number of particles in the spring grid.
 % Time step set-up.
-T = 4;
+T = 3;
 t_steps = T/dt;
 ts = 0:dt:T-dt;
 
@@ -56,7 +55,14 @@ X_init = reshape(X_init,[NP n_dims]); % Flatten the matrix.
 % Initialize the marble position and velocity
 X_marble_init = L+[max(x)-2*L,max(y)-2*L,0].*rand(NM,3);
 X_marble_init(:,4) = r_marble;%r_marble + r_marble*rand(NM,1);
-X_marble_init(:,3) = 2*r_marble;
+X_marble_init(:,3) = (Nz+1)*r_marble;
+for i = 1:NM
+    fprintf("Marble %d: r = %.3f [m], m = %.3f [kg]\n",i,r_marble(i),M_marble(i))
+    fprintf("\t  xyz: [%.2f,%.2f,%.2f]\n",X_marble_init(i,1),X_marble_init(i,2),X_marble_init(i,3))
+end
+%X_marble_init(1,1:end-1) = X_marble_init(2,1:end-1);
+%X_marble_init(1,3) = 17;
+%
 % X_init(:,3) = X_init(:,3)+start_z;
 % X now has Shape (NP x n_dims)
 % First Nc entries in X is the top row, Nc+1->2*Nc second row and so on.
@@ -139,7 +145,7 @@ end
 %%
 % disp("Saved to 'ExampleVideo.avi'")
 figure(2)
-[E,Ek,Es,Ep] = EnergyCalculation(X,V,M,g,ks_springs,L_springs);
+[E,Ek,Es,Ep] = EnergyCalculationMarble(X,X_marble,V,V_marble,M,M_marble,g,ks_springs,L_springs);
 PlotEnergies(E,Ek,Es,Ep,ts,kd)
 figure(3);
 % Track center of mass.

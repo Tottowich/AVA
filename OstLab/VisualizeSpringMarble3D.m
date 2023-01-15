@@ -54,7 +54,7 @@ z = squeeze(X(1,:,3));
 springs_linespec = "k.-";
 SPRINGS = plot(graph(A),springs_linespec,'XData',x,'YData',y,'ZData',z,'NodeLabel',{});
 % SPRINGS.MarkerSize = 20;
-% view(0,90)
+view(0,25)
 [sx,sy,sz] = sphere(40); % Sphere for plotting
 for n = 1:NM % Number of marbles
     % Create a cirlce as a rectangle.
@@ -70,7 +70,7 @@ for n = 1:NM % Number of marbles
 
 end
 % Begin main time loop
-for t = 1:1:t_steps
+for t = 1:3:t_steps
     x = squeeze(X(t,:,1));
     y = squeeze(X(t,:,2));
     z = squeeze(X(t,:,3));
