@@ -1,5 +1,5 @@
 # Applied Vector Analysis
-:.
+AVA:.
 ├───Code
 │   └───Surfaces
 ├───Lecture-3
