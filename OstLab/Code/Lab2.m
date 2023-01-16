@@ -42,28 +42,26 @@ x3 = [0 1]; % REMOVE
 masses = [1; 1]; % The masses of particle 1 and two
 L = 1; % Spring rest length.
 ks = 10; % Spring constant.
-kd = 0.5; % Damping coefficient.w
+kd = 0; % Damping coefficient.w
 g = 0; % NO GRAVITY.
 % The particles are released from rest, i.e:
 v = 0;
+% The inital velocities for each particle.
 v1 = [0 -v];
 v2 = [0 v];
-T = 6;
-dt = 1e-2;
+T = 4;
+dt = 4e-2;
 % ---------------
 visualize = 0;
 record = 0;
 name = "Video/Lab2Damping";
-% Using the given values we can used the same methodology as in exercise 1.
-% However the problem is that we must construct an accurate force function
-% (recall F(X,V))
 
 % As described in the theory above we can use the function
 %      F(i,j) = -ks(abs(r(i,j))-L)*r_bar, Must be a vector!
 % Note: r(i,j) is the distance between particle i and particle j
 
-t_steps = ceil(T/dt);
-M = diag(masses);
+t_steps = ceil(T/dt); % Number of time steps in the simulation.
+M = diag(masses); % The diagonal matrix of masses.
 X_init = [x1;x2];
 V_init = [v1;v2];
 F = @(X,V) ForceFunction(X,V,ks,kd,L); % Anonymous function for LeapFrog
@@ -80,8 +78,8 @@ end
 
 ts = linspace(0,T,t_steps);
 % Plot energies over time.
-% figure(2);
-% PlotEnergies(E,Ek,Es,Ep,ts,kd)
+figure(2);
+PlotEnergies(E,Ek,Es,Ep,ts,kd)
 % Plot displacement of the particles
 %
 figure(3)
@@ -104,7 +102,7 @@ hold off
 % The relative position of each particle is the length of the springs.
 R = X - permute(X, [1 4 3 2]); % Relative positions, how long are the springs.
 rs = vecnorm(R,2,3); % The magnitude of each spring.
-spring_length = rs(:,1,2); % The spring. as seen from (1)<->(2)
+spring_length = rs(:,1,2); % The spring. as seen from (1)->(2)
 amps = abs(spring_length-L); % The amplitudes represent the strech of the spring.
 %
 % Calculate the difference in energy per occilation.
@@ -156,7 +154,6 @@ if abs(v)>0
     figure(4)
     plot(ts,ang_mom)
     grid on;
-%     legend(Location="best")
     title("Angular Momentum")
     xlabel("Time (s)")
     ylabel("kgm^2/s")

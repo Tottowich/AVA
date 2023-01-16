@@ -83,8 +83,8 @@ kd_springs(A==1) = kd;
 % Masses of the particles.
 ms = ones(NP,1)*masses; % All particles have the same mass.
 M = diag(ms);
-reps = 1; % 250
-vx_inits = 5;%[3,5,7]; % 7
+reps = 1; % 400
+% vx_inits = [3,5,7]; % Used for testing multiple initial velocities (to find mu).
 mus = zeros(reps,length(vx_inits));
 for i = 1:length(vx_inits) % All the 
     vx_init = vx_inits(i);
@@ -101,16 +101,18 @@ for i = 1:length(vx_inits) % All the
             figure(1)
             VisualizeSpringSystemWithSurface(X,A,circle_surface,record,name)% close
         end
-    %     figure(2)
         [E,Ek,Es,Ep] = EnergyCalculation(X,V,ms,g,ks_springs,L_springs);
-        PlotEnergies(E,Ek,Es,Ep,ts,kd)
-        
-    %     % Track center of mass.
-        figure(3);
         center_mass_vel = squeeze(sum(V.*ms',2))./sum(ms);
-        plot(ts,center_mass_vel(:,1))
-        grid on
-        title("Vx center of mass")
+        if reps==1 % To avoid slow polling.
+            figure(2)
+            PlotEnergies(E,Ek,Es,Ep,ts,kd)
+            
+            % Track center of mass.
+            figure(3);
+            plot(ts,center_mass_vel(:,1))
+            grid on
+            title("Vx center of mass")
+        end
         vx_diff = center_mass_vel(1,1)-center_mass_vel(end,1);
         % Average acceleration is therefore:
         ax_ave = vx_diff/T;
@@ -120,6 +122,7 @@ for i = 1:length(vx_inits) % All the
         mus(r,i) = mu;
     end
 end
+ave_mu = mean(mus);
 
 function F_mat = ForceFunction(X,V,ms,g,ks,kd,L)
     % This is the force function of the current lab exercise.

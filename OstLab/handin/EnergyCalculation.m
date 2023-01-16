@@ -1,4 +1,4 @@
-function [E,Ek,Es,Ep] = EnergyCalculationMarble(X,X_marble,V,V_marble,ms,ms_marble,g,ks,L)
+function [E,Ek,Es,Ep] = EnergyCalculation(X,V,ms,g,ks,L)
 %ENERGYCALCULATION Calculates the energies of the system.
 %   Calculate the various energies of a system of springs.
 %
@@ -65,18 +65,14 @@ Es = sum(spring_energies,[2,3])/2;
 % KINETIC
 vs = vecnorm(V,2,3); % Magnitude of velocity of each particle.
 % vs now have the shape (t_steps x NP)
-Ek_springs = vs.^2*ms/2; % (t_steps x NP)x(NP x 1) -> (t_steps x 1)
-vs_marble = vecnorm(V_marble,2,3);
-Ek_marbles = vs_marble.^2*ms_marble/2;
-Ek = Ek_springs+Ek_marbles;
+Ek = vs.^2*ms/2; % (t_steps x NP)x(NP x 1) -> (t_steps x 1)
+
 
 % POTENTIAL
 h = X(:,:,2*(2==n_dims)+3*(3==n_dims)); % (t_steps x NP)
 
-Ep_springs = g*h*ms; % (t_steps x NP)x(NP x 1) -> (t_steps x 1)
-h_marble = X_marble(:,:,2*(2==n_dims)+3*(3==n_dims));
-Ep_marble = g*h_marble*ms_marble;
-Ep = Ep_springs+Ep_marble;
+Ep = g*h*ms; % (t_steps x NP)x(NP x 1) -> (t_steps x 1)
+
 
 % TOTAL
 

@@ -1,5 +1,5 @@
-function circle_surface = BuildSurface2D(Nx,Ny,R,dist,n_dims)
-%BUILDFLOOR Build 2D floor consisting of randomly distributed circles.
+function circle_surface = BuildSurface(N,R,dist,n_dims)
+%BUILDSURFACE Build floor consisting of randomly distributed circles.
 %
 % Creates a matrix describing the floor made of circles.
 % The circles will be distributed somewhat randomly (dist*R*rand) 
@@ -24,22 +24,12 @@ function circle_surface = BuildSurface2D(Nx,Ny,R,dist,n_dims)
 %   circle_surface - (mat) Matrix of shape (N x n_dims+1). For each circle
 %                          there is center (x,y,z) + radius.
 %
-% if length(R)<N
-%     R = repmat(R,N,1);
-%     R = R(1:N,1); 
-% end
-circle_centers = zeros(Nx,Ny,n_dims);
-[x,y]=meshgrid(0:R:(Nx-1)*R,0:R:(Ny-1)*R);
-circle_centers(:,:,1)=x';
-circle_centers(:,:,2)=y';
-circle_centers(2:end,2:end,1:2) = circle_centers(2:end,2:end,1:2)+cumsum(dist*randn(Nx-1,Ny-1,2).*R,1);
-% keyboard
+if length(R)<N
+    R = repmat(R,N,1);
+    R = R(1:N,1); 
+end
+circle_centers = zeros(N,n_dims);
+circle_centers(2:end,1) = cumsum(R(2:end)+dist*randn(N-1,1).*R(2:end),1);
 % Center the first circle on the origin.
-circle_centers = reshape(circle_centers, [Nx*Ny,n_dims]);
-circle_surface = [circle_centers repmat(R,Nx*Ny,1)];
-
-% Last dimension of the circle_centers
-
-
-
+circle_surface = [circle_centers R];
 end

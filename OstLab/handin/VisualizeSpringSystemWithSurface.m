@@ -1,5 +1,5 @@
-function  VisualizeSpringSystem(X,A,record,name)
-%VISUALIZECHEESE Visualize the simulated spring system'cheese'
+function  VisualizeSpringSystemWithSurface(X,A,circle_surface,record,name)
+%VISUALIZESPRINSYSTEMWITHSURFACE Visualize the simulated spring system.
 %   Function used to animated the system of springs.
 %
 % Author: Theodor Jonsson
@@ -10,9 +10,13 @@ function  VisualizeSpringSystem(X,A,record,name)
 %
 %   A - (mat) Adjacency matrix of the spring system.
 %
+%   circle_surface - (mat) Matrix of shape (N x n_dims+1). For each circle
+%                          there is center (x,y,z) + radius.
 %   record - (bool) 0 if not record.
 %
 %   name - (string) Name of recording
+%
+
 % Initialize animation file before main loop
 [t_steps,NP,n_dims] = size(X);
 set(gcf,'Position',get(0,'Screensize')); % Maximize the window for quality
@@ -38,10 +42,27 @@ hold on
 x = squeeze(X(1,:,1));
 y = squeeze(X(1,:,2));
 springs_linespec = "k.-";
-SPRINGS = plot(graph(A),springs_linespec,'XData',x,'YData',y);%,'NodeLabel',{});
+% Plot the system as a graph using the adjacency matrix generated for the grid.
+% This is done to skip creating a line for each spring connecting the grid.
+SPRINGS = plot(graph(A),springs_linespec,'XData',x,'YData',y,'NodeLabel',{});
+
+% Display the circular floor.
+N_cirlces = length(circle_surface);
+for n = 1:N_cirlces
+    % Create a cirlce as a rectangle.
+    % Since the rectangle has position based bottom left, and top right.
+    % circle_surface contains the center of the circle, find ["bottom
+    % left","top right"] for the circle.
+    c = circle_surface(n,1:n_dims);
+    r = circle_surface(n,end);
+    pos = [c(1)-r,c(2)-r,2*r,2*r];
+    circles(n) = rectangle(Curvature=[1,1],Position=pos);
+    % Create the rectangle which will be a circle.
+
+end
 % Begin main time loop
 figure(1)
-for t = 2:10:size(X,1)
+for t = 2:size(X,1)
     x = squeeze(X(t,:,1));
     y = squeeze(X(t,:,2));
     % Update the grid.
@@ -49,9 +70,8 @@ for t = 2:10:size(X,1)
     if record
         writeVideo(MOVE,getframe(gcf)); % Get a snapshot of the active figure frame
     else
-        pause(10/length(X))
+        pause(0.01)
     end
-
         % End of main time loop
 end
 hold off

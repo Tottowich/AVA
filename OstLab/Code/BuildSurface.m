@@ -1,5 +1,5 @@
 function circle_surface = BuildSurface(N,R,dist,n_dims)
-%BUILDFLOOR Build floor consisting of randomly distributed circles.
+%BUILDSURFACE Build floor consisting of randomly distributed circles.
 %
 % Creates a matrix describing the floor made of circles.
 % The circles will be distributed somewhat randomly (dist*R*rand) 
@@ -32,9 +32,4 @@ circle_centers = zeros(N,n_dims);
 circle_centers(2:end,1) = cumsum(R(2:end)+dist*randn(N-1,1).*R(2:end),1);
 % Center the first circle on the origin.
 circle_surface = [circle_centers R];
-
-% Last dimension of the circle_centers
-
-
-
 end

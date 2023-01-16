@@ -42,6 +42,8 @@ hold on
 x = squeeze(X(1,:,1));
 y = squeeze(X(1,:,2));
 springs_linespec = "k.-";
+% Plot the system as a graph using the adjacency matrix generated for the grid.
+% This is done to skip creating a line for each spring connecting the grid.
 SPRINGS = plot(graph(A),springs_linespec,'XData',x,'YData',y,'NodeLabel',{});
 
 % Display the circular floor.

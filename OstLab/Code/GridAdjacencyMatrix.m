@@ -30,7 +30,7 @@ function [A,diagonals] = GridAdjacencyMatrix(Nr,Nc)
 %
 horizontal = repmat([ones(Nc-1, 1); 0], Nr, 1);% Make the first diagonal vector
                                                % (for horizontal connections)
-
+                                               
 horizontal = horizontal(1:end-1);              % Remove the last value
 
 tl_to_br = [0; horizontal(1:(Nc*(Nr-1)))]; % Make the second diagonal
