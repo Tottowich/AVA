@@ -22,8 +22,8 @@ n_dims = 2;
 N_circles = 16; % Number of circles that make up the floor
 dist_circle = 0.1; % [0<->1] describing how large portion of radius to seperate.
 % --------------------------------------
-visualize=1;
-record = 0;
+visualize=0; % 1 for visualize, 0 not.
+record = 0; % 1 recording, 0 not.
 name = "Video/Lab3/Lab3GridSprings";
 
 r_circle = L; % Randius of the circles which constructs the surface
@@ -33,7 +33,7 @@ vx_init = 7;
 vy_init = 0;
 NP = Nc*Nr; % Total number of particles in the spring grid.
 % Time step set-up.
-T = 2;
+T = 1.2;
 t_steps = T/dt;
 ts = 0:dt:T-dt;
 
@@ -84,37 +84,45 @@ kd_springs(A==1) = kd;
 ms = ones(NP,1)*masses; % All particles have the same mass.
 M = diag(ms); % Diagonal matrix.
 
-% Create the floor
-circle_surface = BuildSurface(N_circles,r_circle,dist_circle,n_dims);
-
-
-% F = @(X,V) ForceFunction(X,V,A,ms,g,ks_springs,kd_springs,L_springs);
-F = @(X,V) ForceFunction(X,V,ms,g,ks_springs,kd_springs,L_springs);
-[X,V] = LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt);
-%timeit(@() LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt));
-if visualize
-    figure(1)
-    VisualizeSpringSystemWithSurface(X,A,circle_surface,record,name)% close
+reps = 400; % 250
+vx_inits = [3,5,7]; % 7
+mus = zeros(reps,length(vx_inits));
+for i = 1:length(vx_inits) % All the 
+    vx_init = vx_inits(i);
+    V_init(:,1)=vx_init;
+    for r = 1:reps % We want multiple runs to increase accuracy in mu.
+        circle_surface = BuildSurface(N_circles,r_circle,dist_circle,n_dims);
+        
+        
+        % F = @(X,V) ForceFunction(X,V,A,ms,g,ks_springs,kd_springs,L_springs);
+        F = @(X,V) ForceFunction(X,V,ms,g,ks_springs,kd_springs,L_springs);
+        [X,V] = LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt);
+        %timeit(@() LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt));
+        if visualize
+            figure(1)
+            VisualizeSpringSystemWithSurface(X,A,circle_surface,record,name)% close
+        end
+    %     figure(2)
+        [E,Ek,Es,Ep] = EnergyCalculation(X,V,ms,g,ks_springs,L_springs);
+        PlotEnergies(E,Ek,Es,Ep,ts,kd)
+        
+    %     % Track center of mass.
+    %     figure(3);
+        center_mass_vel = squeeze(sum(V.*ms',2))./sum(ms);
+        plot(ts,center_mass_vel(:,1))
+        grid on
+        title("Vx center of mass")
+        vx_diff = center_mass_vel(1,1)-center_mass_vel(end,1);
+        % Average acceleration is therefore:
+        ax_ave = vx_diff/T;
+        % f_mu = f_x =ma_x=mu*mg*cos(theta), theta=0. =>
+        mu = ax_ave/g;
+        fprintf("\nFriction coefficient using initial x-velocity %.2f: mu = %.3f \n",vx_init,mu)
+        mus(r,i) = mu;
+    end
 end
-figure(2)
-[E,Ek,Es,Ep] = EnergyCalculation(X,V,ms,g,ks_springs,L_springs);
-PlotEnergies(E,Ek,Es,Ep,ts,kd)
 
-% Track center of mass.
-figure(3);
-center_mass_vel = squeeze(sum(V.*ms',2))./sum(ms);
-plot(ts,center_mass_vel(:,1))
-grid on
-title("Vx center of mass")
-vx_diff = center_mass_vel(1,1)-center_mass_vel(end,1);
-% Average acceleration is therefore:
-ax_ave = vx_diff/T;
-% f_mu = f_x =ma_x=mu*mg*cos(theta), theta=0. =>
-mu = ax_ave/g;
-fprintf("\nFriction coefficient using initial x-velocity %.2f: mu = %.3f \n",vx_init,mu)
-% v = 3 =>0.18
-% v = 5 =>0.19
-% v = 7 =>0.17
+% mean(mus) = 0.1665, v = 7.
 function F_mat = ForceFunction(X,V,ms,g,ks,kd,L)
     % This is the force function of the current lab exercise.
     %

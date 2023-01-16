@@ -42,17 +42,17 @@ x3 = [0 1]; % REMOVE
 masses = [1; 1]; % The masses of particle 1 and two
 L = 1; % Spring rest length.
 ks = 10; % Spring constant.
-kd = 0.0; % Damping coefficient.w
+kd = 0; % Damping coefficient.w
 g = 0; % NO GRAVITY.
 % The particles are released from rest, i.e:
 v = 5;
 v1 = [0 -v];
 v2 = [0 v];
 T = 4;
-dt = 1e-3;
+dt = 2e-2;
 % ---------------
 visualize = 0;
-record = 1;
+record = 0;
 name = "Video/Lab2Damping";
 % Using the given values we can used the same methodology as in exercise 1.
 % However the problem is that we must construct an accurate force function
@@ -80,12 +80,10 @@ end
 
 ts = linspace(0,T,t_steps);
 % Plot energies over time.
-figure(2);
-PlotEnergies(E,Ek,Es,Ep,ts,kd)
-% Calculate the difference in energy per occilation.
-%E_diff = max(E)-min(E);
-%fprintf("\nUsing %.4f results in maximum \nrelative differenceo of %.3f %%\n",dt,E_diff/max(E)*100)
+% figure(2);
+% PlotEnergies(E,Ek,Es,Ep,ts,kd)
 % Plot displacement of the particles
+%
 figure(3)
 subplot(2,2,[1 2])
 plot(ts,X(:,:,1))
@@ -93,9 +91,10 @@ xlabel("Time ( s )")
 ylabel("Displacement ( m )")
 title("Displacement over time in x")
 grid on;
+legend("particle (1)","particle (2)",Location="best")
 subplot(2,2,[3 4])
 plot(ts,X(:,:,2))
-legend("x-coords","y-coords",Location="best")
+legend("particle (1)","particle (2)",Location="best")
 xlabel("Time ( s )")
 ylabel("Displacement ( m )")
 title("Displacement over time in y")
@@ -107,6 +106,15 @@ R = X - permute(X, [1 4 3 2]); % Relative positions, how long are the springs.
 rs = vecnorm(R,2,3); % The magnitude of each spring.
 spring_length = rs(:,1,2); % The spring. as seen from (1)<->(2)
 amps = abs(spring_length-L); % The amplitudes represent the strech of the spring.
+%
+% Calculate the difference in energy per occilation.
+if kd==0
+    [amp_peaks,t_peaks] = findpeaks(amps);
+    E_diff = abs(E(t_peaks(2))-E(t_peaks(1)))/E(t_peaks(1))*100; % Difference in %
+    fprintf("\nUsing %.4f results in maximum \nrelative differenceo of %.3f %%\n",dt,E_diff)
+end
+%
+
 % Plot the length of the spring over time.
 figure(4);
 plot(ts,amps)
@@ -116,22 +124,27 @@ xlabel("Time (s)")
 ylabel("Length (m)")
 hold on
 % Analytical solution to the problem is as follows
-r_analytical = @(t) exp(-0.5*t).*(0.8*cos(sqrt(19.75)*t)+0.00907*sin(sqrt(19.75)));
+r_analytical = @(t) exp(-0.5*t).*(0.8*cos(sqrt(19.75)*t)+0.090*sin(sqrt(19.75)*t));
 plot(ts,abs(r_analytical(ts)))
 legend(["Simulated","Analytical"],Location="best")
-hold off%%
+hold off
+%
 if kd>0
     % Find first peak which does not exceed 10% of the initial amplitude.
-    [amp_peaks,amp_ids] = findpeaks(amps);
-    amp_times = amp_ids*dt;
-    amp_init = amps(1); % Initial amplitude of the spring.
-    id_amp = find(amp_peaks<0.1*amp_init,1);
-    % Elapsed time can be found in amp_times
-    fprintf("\nTime to reach 10%% of initial amplitude using the following values:\n")
-    fprintf("Initial amplitude = %.3f\n",amp_init);
-    fprintf("kd = %.3f\n",kd);
-    fprintf("ks = %.3f\n",ks);
-    fprintf("Time to reach = %.3f\n",amp_times(id_amp));
+    % Initial energy:
+    E_init = E(1);
+    t_below_id = find((E<E_init*0.01)==1);
+    if ~isempty(t_below_id)
+        t_below = t_below_id(1)*dt;
+        % Elapsed time can be found in amp_times
+        fprintf("\nTime to reach 10%% of initial amplitude using the following values:\n")
+        fprintf("Initial amplitude = %.3f\n",amps(1));
+        fprintf("kd = %.3f\n",kd);
+        fprintf("ks = %.3f\n",ks);
+        fprintf("Time to reach = %.3f\n",t_below);
+    else
+        disp("Did not reach 10% of initial amplitude.")
+    end
 end
 if abs(v)>0
     % d) Calculate the angular momentum
@@ -140,10 +153,18 @@ if abs(v)>0
     % Find the moment of inertia at each time step.
     % Since we have equal masses we know that the axis of rotation is in the
     % middle of the spring. Resulting in two dual
+    figure(4)
+    plot(ts,ang_mom)
+    grid on;
+%     legend(Location="best")
+    title("Angular Momentum")
+    xlabel("Time (s)")
+    ylabel("rad/s & m")
+    hold off;
     I = sum((spring_length/2).^2.*masses',2);
     ang_freq = ang_mom./I;
     % Plotting the angular momentum vs spring length
-    figure(4)
+    figure(5)
     plot(ts,ang_freq,DisplayName="Angular Frequency")
     hold on;
     plot(ts,spring_length,DisplayName="Spring Length")

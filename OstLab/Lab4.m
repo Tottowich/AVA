@@ -1,6 +1,6 @@
 % Modeling a sliding macroscopic 2D object
 % Author: Theodor Jonsson
-% Date 5/1/2023
+% Date 6/1/2023
 % Testing using vectorized implementation instead of nested loops first.
 % The strategy is to construct an adjecency matrix and use that together
 % with similar method as in exercise 2 to simulate the system.
@@ -24,8 +24,8 @@ dist_circle = 0.1; % [0<->1] describing how large portion of radius to seperate.
 r_circle = 0.75*L; % Randius of the circles which constructs the surface
 vx_init = 10;
 % --------------------------------------
-visualize=0;
-record = 1;
+visualize=1;
+record = 0;
 name = "Video/Lab4/Lab4GridSpringsB";
 
 start_x = 0;
@@ -83,37 +83,43 @@ kd_springs(A==1) = kd;
 % Masses of the particles.
 ms = ones(NP,1)*masses; % All particles have the same mass.
 M = diag(ms);
-
-% Create the floor
-circle_surface = BuildSurface(N_circles,r_circle,dist_circle,n_dims);
-
-
-% F = @(X,V) ForceFunction(X,V,A,ms,g,ks_springs,kd_springs,L_springs);
-F = @(X,V) ForceFunction(X,V,ms,g,ks_springs,kd_springs,L_springs);
-[X,V] = LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt);
-timeit(@() LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt))
-
-if visualize
-    figure(1)
-    VisualizeSpringSystemWithSurface(X,A,circle_surface,record,name)% close
+reps = 1; % 250
+vx_inits = 5;%[3,5,7]; % 7
+mus = zeros(reps,length(vx_inits));
+for i = 1:length(vx_inits) % All the 
+    vx_init = vx_inits(i);
+    V_init(:,1)=vx_init;
+    for r = 1:reps % We want multiple runs to increase accuracy in mu.
+        circle_surface = BuildSurface(N_circles,r_circle,dist_circle,n_dims);
+        
+        
+        % F = @(X,V) ForceFunction(X,V,A,ms,g,ks_springs,kd_springs,L_springs);
+        F = @(X,V) ForceFunction(X,V,ms,g,ks_springs,kd_springs,L_springs);
+        [X,V] = LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt);
+        %timeit(@() LeapFrogWithSurfaceCheck(X_init,V_init,F,M,circle_surface,t_steps,dt));
+        if visualize
+            figure(1)
+            VisualizeSpringSystemWithSurface(X,A,circle_surface,record,name)% close
+        end
+    %     figure(2)
+        [E,Ek,Es,Ep] = EnergyCalculation(X,V,ms,g,ks_springs,L_springs);
+        PlotEnergies(E,Ek,Es,Ep,ts,kd)
+        
+    %     % Track center of mass.
+        figure(3);
+        center_mass_vel = squeeze(sum(V.*ms',2))./sum(ms);
+        plot(ts,center_mass_vel(:,1))
+        grid on
+        title("Vx center of mass")
+        vx_diff = center_mass_vel(1,1)-center_mass_vel(end,1);
+        % Average acceleration is therefore:
+        ax_ave = vx_diff/T;
+        % f_mu = f_x =ma_x=mu*mg*cos(theta), theta=0. =>
+        mu = ax_ave/g;
+        fprintf("\nFriction coefficient using initial x-velocity %.2f: mu = %.3f \n",vx_init,mu)
+        mus(r,i) = mu;
+    end
 end
-% disp("Saved to 'ExampleVideo.avi'")
-figure(2)
-[E,Ek,Es,Ep] = EnergyCalculation(X,V,ms,g,ks_springs,L_springs);
-PlotEnergies(E,Ek,Es,Ep,ts,kd)
-figure(3);
-% Track center of mass.
-center_mass_vel = squeeze(sum(V.*ms',2))./sum(ms);
-plot(ts,center_mass_vel(:,1))
-grid on
-title("Vx center of mass")
-vx_diff = center_mass_vel(1,1)-center_mass_vel(end,1);
-% Average acceleration is therefore:
-ax_ave = vx_diff/T;
-% f_mu = f_x =ma_x=mu*mg*cos(theta), theta=0. =>
-mu = ax_ave/g;
-% v = 5, kd=5 => 0.15
-% v = 10, kd=50 => 0.16
 
 function F_mat = ForceFunction(X,V,ms,g,ks,kd,L)
     % This is the force function of the current lab exercise.
