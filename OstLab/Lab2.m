@@ -45,11 +45,11 @@ ks = 10; % Spring constant.
 kd = 0; % Damping coefficient.w
 g = 0; % NO GRAVITY.
 % The particles are released from rest, i.e:
-v = 5;
+v = 0;
 v1 = [0 -v];
 v2 = [0 v];
 T = 4;
-dt = 2e-2;
+dt = 4e-2;
 % ---------------
 visualize = 0;
 record = 0;
@@ -110,7 +110,7 @@ amps = abs(spring_length-L); % The amplitudes represent the strech of the spring
 % Calculate the difference in energy per occilation.
 if kd==0
     [amp_peaks,t_peaks] = findpeaks(amps);
-    E_diff = abs(E(t_peaks(2))-E(t_peaks(1)))/E(t_peaks(1))*100; % Difference in %
+    E_diff = max(abs(E(t_peaks(2:end))-E(t_peaks(1:end-1)))./E(t_peaks(1:end-1))*100); % Difference in %
     fprintf("\nUsing %.4f results in maximum \nrelative differenceo of %.3f %%\n",dt,E_diff)
 end
 %
@@ -159,7 +159,7 @@ if abs(v)>0
 %     legend(Location="best")
     title("Angular Momentum")
     xlabel("Time (s)")
-    ylabel("rad/s & m")
+    ylabel("kgm^2/s")
     hold off;
     I = sum((spring_length/2).^2.*masses',2);
     ang_freq = ang_mom./I;
