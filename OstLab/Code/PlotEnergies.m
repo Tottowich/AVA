@@ -1,6 +1,7 @@
 function PlotEnergies(E,Ek,Es,Ep,ts,kd)
 %PLOTENERGIES Plot energies of a spring system over time.
 %
+%
 %   E - (vec) Vector for the total energy of the system at each time step.
 %
 %   Ek - (vec) Vector for the kinetic energy of the system at each time step.

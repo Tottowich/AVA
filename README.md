@@ -1,9 +1,9 @@
-# Applied Vector Analysis
+# Applied Vector Analysis Umeå University
 ```bash
 AVA:.
 ├───Code    
 │   └───Surfaces # Calculate the surface area of any simple surface, with visualization
-├───Lecture-3
+├───Lecture-3 # HTML lecture notes for some of the lectures.
 ├───Lecture-4
 ├───Lecture-5
 │   └───images
@@ -22,3 +22,6 @@ AVA:.
         ├───Lab5
         └───Lab6
 ```
+# Responsiblility
+- [x] The code in this repository should not be used for any other purpose than inspiration if used during the course at Umeå University.
+- [x] The code is not guaranteed to be correct and should not be used for any other purpose than inspiration.
